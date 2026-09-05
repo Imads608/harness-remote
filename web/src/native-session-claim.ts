@@ -1,6 +1,6 @@
 import { Capacitor, CapacitorHttp } from "@capacitor/core"
 import { desktopRequest, isDesktopPlatform } from "./desktopBridge"
-import { authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
+import { appendServerPath, authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
 import type { ServerConfig } from "./types"
 
 export type NativeSessionClaimTransport = {
@@ -41,7 +41,7 @@ export const nativeSessionClaimTransport: NativeSessionClaimTransport = {
       ...routingHeaders(config, { preflight: !Capacitor.isNativePlatform() })
     }
     if (hasCredentials(config)) headers.Authorization = authHeader(config)
-    const url = `${baseUrl(config)}${path}`
+    const url = appendServerPath(baseUrl(config), path)
 
     if (Capacitor.isNativePlatform()) {
       let response

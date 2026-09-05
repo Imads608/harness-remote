@@ -38,6 +38,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
 
+  // Gateway deployments may regenerate this bootstrap independently of the application build.
+  // Never let a previous provisioned-machine list survive in the application cache.
+  const configPath = new URL("config.js", self.registration.scope).pathname
+  if (url.pathname === configPath) {
+    event.respondWith(fetch(request))
+    return
+  }
+
   if (request.mode === "navigate") {
     const scope = self.registration.scope
     const scopeUrl = new URL(scope)

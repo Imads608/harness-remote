@@ -6,6 +6,8 @@ export type ServerConfig = {
   port: number
   username: string
   password: string
+  /** Same-origin gateway mount point for browser deployments. Never an absolute URL. */
+  proxyPath?: string
   /** Present when this profile targets one agent exposed by a Harness machine daemon. */
   agentId?: string
 }

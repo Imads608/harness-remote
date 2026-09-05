@@ -126,7 +126,7 @@ export function NativeSessionObserver({
         }
       })
     return () => { disposed = true }
-  }, [target.key, target.config.host, target.config.port, target.config.agentId, interactionEnabled])
+  }, [target.key, target.config.host, target.config.port, target.config.proxyPath, target.config.agentId, interactionEnabled])
 
   const agent = useMemo<MachineAgentHost>(() => ({
     id: target.agentID,

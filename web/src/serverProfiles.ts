@@ -1,8 +1,9 @@
 import type { BackendKind, ServerConfig } from "./types"
+import { normalizeProxyPath } from "./serverConfig.ts"
 
 /** Every server storage key lives here: the crash-recovery reset in storageKeys.ts composes them,
-    and only this module reads or writes them. Keep this file free of runtime sibling imports so the
-    node test runner, which cannot resolve extensionless specifiers, can load it directly. */
+    and only this module reads or writes them. Runtime helpers use explicit TypeScript specifiers so
+    both the bundler and the node test runner resolve them identically. */
 export const LEGACY_STORAGE_KEY = "opencode.remote.server"
 export const ACTIVE_BACKEND_STORAGE_KEY = "opencode.remote.backend"
 export const BACKEND_STORAGE_KEYS = {
@@ -49,7 +50,9 @@ function parseConfig(value: unknown, fallbackBackend: BackendKind): ServerConfig
   const backend = isBackend(candidate.backend) ? candidate.backend : fallbackBackend
   if (typeof candidate.host !== "string" || typeof candidate.port !== "number" || typeof candidate.username !== "string" || typeof candidate.password !== "string") return null
   const agentId = typeof candidate.agentId === "string" && candidate.agentId.trim() ? candidate.agentId.trim() : undefined
-  return { ...defaultConfig(backend), ...candidate, backend, agentId }
+  const proxyPath = normalizeProxyPath(candidate.proxyPath)
+  if (proxyPath === null) return null
+  return { ...defaultConfig(backend), ...candidate, backend, proxyPath, agentId }
 }
 
 function profileID(): string {
@@ -78,7 +81,9 @@ function repairMisroutedDaemonProfile(profile: SavedServerProfile): SavedServerP
 }
 
 function sameMachine(left: ServerConfig, right: ServerConfig): boolean {
-  return left.host.trim().toLowerCase() === right.host.trim().toLowerCase() && left.username === right.username
+  return left.host.trim().toLowerCase() === right.host.trim().toLowerCase()
+    && left.username === right.username
+    && (left.proxyPath ?? "") === (right.proxyPath ?? "")
 }
 
 /** Repair the bad internal OpenCode port only when another saved daemon profile identifies its port. */
@@ -174,6 +179,7 @@ function connectionIdentity(config: ServerConfig): string {
     host: config.host.trim().toLowerCase(),
     port: config.port,
     username: config.username,
+    proxyPath: config.proxyPath ?? "",
     agentId: config.agentId?.trim() ?? ""
   })
 }

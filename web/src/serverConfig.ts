@@ -1,5 +1,41 @@
 import type { ServerConfig } from "./types.js"
 
+const DISALLOWED_PROXY_PATH_CHARACTER = /[\u0000-\u001f\u007f-\u009f\\?#]/
+
+/**
+ * A proxy path is appended to a validated HTTP(S) origin. Keeping validation independent from URL
+ * parsing prevents protocol-relative URLs, URL components and path traversal from changing that
+ * origin at runtime.
+ */
+export function normalizeProxyPath(value: unknown): string | undefined | null {
+  if (value === undefined) return undefined
+  if (typeof value !== "string" || value !== value.trim()) return null
+  if (!value.startsWith("/") || value.startsWith("//")) return null
+  if (value.length > 1 && value.endsWith("/")) return null
+  if (value.includes("//") || DISALLOWED_PROXY_PATH_CHARACTER.test(value)) return null
+
+  for (const segment of value.split("/")) {
+    let decoded = segment
+    try {
+      for (let pass = 0; pass < 3; pass += 1) {
+        const next = decodeURIComponent(decoded)
+        if (next === decoded) break
+        decoded = next
+      }
+    } catch {
+      return null
+    }
+    if (
+      decoded === "."
+      || decoded === ".."
+      || decoded.includes("/")
+      || /[\u0000-\u001f\u007f-\u009f\\]/.test(decoded)
+    ) return null
+  }
+
+  return value
+}
+
 /**
  * Kept free of Capacitor imports so it can be unit tested directly: the rules here
  * decide whether the app is allowed to build a URL at all.
@@ -32,13 +68,15 @@ export function normalizeServerHost(host: string): string | null {
  */
 export function normalizeServerConfig(config: ServerConfig): ServerConfig | null {
   const host = normalizeServerHost(config.host)
-  if (!host || !Number.isInteger(config.port) || config.port < 1 || config.port > 65_535) return null
+  const proxyPath = normalizeProxyPath(config.proxyPath)
+  if (!host || !Number.isInteger(config.port) || config.port < 1 || config.port > 65_535 || proxyPath === null) return null
   const agentId = config.agentId?.trim() || undefined
   return {
     ...config,
     host,
     username: config.username.trim(),
     password: config.password.trim(),
+    proxyPath,
     agentId
   }
 }
@@ -48,7 +86,16 @@ export function machineBaseUrl(config: ServerConfig): string {
   const schemeMatch = host.match(/^(https?):\/\//i)
   const scheme = schemeMatch ? schemeMatch[1].toLowerCase() : "http"
   const cleanHost = schemeMatch ? host.slice(schemeMatch[0].length) : host
-  return `${scheme}://${cleanHost}:${config.port}`
+  const proxyPath = normalizeProxyPath(config.proxyPath)
+  if (proxyPath === null) throw new TypeError("Invalid server proxy path")
+  // Root is the origin itself. Omitting its slash keeps callers that append `/v1/...` canonical.
+  return `${scheme}://${cleanHost}:${config.port}${proxyPath === "/" ? "" : (proxyPath ?? "")}`
+}
+
+/** Append an application path without letting URL resolution discard a gateway proxy prefix. */
+export function appendServerPath(serverURL: string, path: string): string {
+  const suffix = path.startsWith("/") ? path : `/${path}`
+  return `${serverURL.replace(/\/$/, "")}${suffix}`
 }
 
 /**

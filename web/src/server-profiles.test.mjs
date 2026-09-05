@@ -56,6 +56,28 @@ persistServerProfiles([daemonProfile], daemonProfile.id)
 const restoredDaemon = loadActiveServerProfile(loadServerProfiles())
 assert.equal(restoredDaemon.config.agentId, 'opencode', 'machine agent selection should survive restart')
 
+const gatewayProfile = {
+  id: 'gateway-profile',
+  name: 'Gateway machine',
+  config: {
+    backend: 'opencode',
+    host: 'https://gateway.example',
+    port: 443,
+    username: '',
+    password: '',
+    proxyPath: '/api/harness/arch-desktop'
+  }
+}
+storage.set(ACTIVE_PROFILE_STORAGE_KEY, gatewayProfile.id)
+persistServerProfiles([gatewayProfile], gatewayProfile.id)
+assert.equal(loadServerProfiles()[0].config.proxyPath, '/api/harness/arch-desktop', 'gateway proxy paths should survive profile persistence')
+
+const invalidGatewayProfile = structuredClone(gatewayProfile)
+invalidGatewayProfile.config.proxyPath = 'https://evil.example/harness'
+storage.set(SERVER_PROFILES_STORAGE_KEY, JSON.stringify([invalidGatewayProfile]))
+assert.notEqual(loadServerProfiles()[0].id, invalidGatewayProfile.id, 'absolute proxy URLs must be rejected from saved profiles')
+
+storage.set(SERVER_PROFILES_STORAGE_KEY, JSON.stringify([gatewayProfile]))
 const malformed = JSON.parse(storage.get(SERVER_PROFILES_STORAGE_KEY))
 malformed[0].config.agentId = { invalid: true }
 storage.set(SERVER_PROFILES_STORAGE_KEY, JSON.stringify(malformed))
@@ -101,5 +123,12 @@ const storageKeys = readFileSync(new URL('./storageKeys.ts', import.meta.url), '
 assert.match(storageKeys, /SERVER_PROFILES_STORAGE_KEY/, 'the crash-recovery reset must clear saved servers')
 assert.match(storageKeys, /ACTIVE_PROFILE_STORAGE_KEY/, 'the crash-recovery reset must clear the selected server')
 assert.ok(!/"opencode\.remote\.(serverProfiles|activeServerProfile)"/.test(storageKeys), 'storage keys must have a single definition')
+
+const desktopBridge = readFileSync(new URL('./desktopBridge.ts', import.meta.url), 'utf8')
+const desktopRegistry = readFileSync(new URL('../electron/profile-registry.ts', import.meta.url), 'utf8')
+assert.match(desktopBridge, /left\.proxyPath === right\.proxyPath/, 'renderer profile equality must separate gateway paths')
+assert.match(desktopBridge, /proxyPath: normalized\.proxyPath/, 'desktop profile synchronization must preserve gateway paths')
+assert.match(desktopRegistry, /left\.proxyPath === right\.proxyPath/, 'Electron profile equality must separate gateway paths')
+assert.match(desktopRegistry, /normalizeProxyPath\(candidate\.proxyPath\)/, 'Electron must validate persisted gateway paths')
 
 console.log('server profile tests passed')

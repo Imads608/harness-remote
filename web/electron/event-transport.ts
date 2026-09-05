@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { WebContents } from "electron"
-import { baseUrl, routingHeaders } from "../src/serverConfig.js"
+import { appendServerPath, baseUrl, routingHeaders } from "../src/serverConfig.js"
 import { parseSSEFrame, type ParsedOpenCodeEvent } from "../src/sse-parser.js"
 import { ProfileRegistry, type ProfileRegistryChange } from "./profile-registry.js"
 import type {
@@ -41,7 +41,7 @@ function authHeader(profile: DesktopProfile): string | undefined {
 }
 
 function streamURL(profile: DesktopProfile, options: DesktopEventSubscriptionOptions): URL {
-  const url = new URL(options.scope === "global" ? "/global/event" : "/event", baseUrl(profile))
+  const url = new URL(appendServerPath(baseUrl(profile), options.scope === "global" ? "/global/event" : "/event"))
   if (options.scope === "project" && options.directory) url.searchParams.set("directory", options.directory)
   return url
 }

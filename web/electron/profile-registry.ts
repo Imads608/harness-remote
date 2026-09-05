@@ -1,6 +1,6 @@
 import { mkdir, open, readFile, rename, rm } from "node:fs/promises"
 import { dirname } from "node:path"
-import { baseUrl } from "../src/serverConfig.js"
+import { baseUrl, normalizeProxyPath } from "../src/serverConfig.js"
 import type { BackendKind } from "../src/types.js"
 import type { DesktopProfile } from "./ipc-contract.js"
 
@@ -85,6 +85,8 @@ export function validateDesktopProfile(value: unknown): DesktopProfile {
   // desktop app sent all of them to the daemon's primary agent and each server showed that one
   // agent's sessions. The renderer already carries the field; main has to keep it to route at all.
   const agentId = candidate.agentId === undefined ? undefined : validateAgentID(candidate.agentId)
+  const proxyPath = normalizeProxyPath(candidate.proxyPath)
+  if (proxyPath === null) throw new DesktopProfileError("Profile proxy path is invalid")
   const profile = {
     id,
     backend: candidate.backend,
@@ -92,6 +94,7 @@ export function validateDesktopProfile(value: unknown): DesktopProfile {
     port,
     username: candidate.username,
     password: candidate.password,
+    ...(proxyPath ? { proxyPath } : {}),
     ...(agentId ? { agentId } : {})
   }
   try {
@@ -131,6 +134,7 @@ function sameProfile(left: DesktopProfile, right: DesktopProfile): boolean {
     && left.port === right.port
     && left.username === right.username
     && left.password === right.password
+    && left.proxyPath === right.proxyPath
     && left.agentId === right.agentId
 }
 

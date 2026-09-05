@@ -2,7 +2,7 @@ import { Capacitor, CapacitorHttp } from "@capacitor/core"
 import { desktopRequestResult, isDesktopPlatform } from "./desktopBridge"
 import type { NativeSessionSurfaceTarget } from "./native-session-discovery"
 import { normalizeModel, sameModel } from "./native-session-model"
-import { authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
+import { appendServerPath, authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
 import type { ModelSelection } from "./types"
 
 export type NativeSessionHandoffStatus = "accepted" | "pending" | "uncertain"
@@ -160,7 +160,7 @@ export async function handoffNativeSession(
       ...routingHeaders(source.config, { preflight: !Capacitor.isNativePlatform() })
     }
     if (hasCredentials(source.config)) headers.Authorization = authHeader(source.config)
-    const url = `${baseUrl(source.config)}${path}`
+    const url = appendServerPath(baseUrl(source.config), path)
 
     if (Capacitor.isNativePlatform()) {
       let response

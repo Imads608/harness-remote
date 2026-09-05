@@ -1,4 +1,4 @@
-import { agentScopedPath, machineBaseUrl, routingHeaders } from "../src/serverConfig.js"
+import { agentScopedPath, appendServerPath, machineBaseUrl, routingHeaders } from "../src/serverConfig.js"
 import type { DesktopProfile, DesktopRequest, DesktopRequestResult, DesktopRequestRoute } from "./ipc-contract.js"
 
 export const MAX_RESPONSE_BYTES = 8 * 1024 * 1024
@@ -100,26 +100,21 @@ function routedProfile(profile: DesktopProfile, route: DesktopRequestRoute | und
 
 function targetURL(profile: DesktopProfile, path: string): URL | null {
   if (!validPath(path)) return null
-  let approved: URL
+  let approvedBase: string
   try {
-    approved = new URL(machineBaseUrl(profile))
+    approvedBase = machineBaseUrl(profile)
   } catch {
     return null
   }
+  const scopedPath = isExplicitMachineScopedRequest(path) ? path : agentScopedPath(profile, path)
   let target: URL
   try {
-    target = new URL(path, approved.origin)
-  } catch {
-    return null
-  }
-  const scopedPath = MACHINE_SCOPED_PATH.test(target.pathname) ? path : agentScopedPath(profile, path)
-  try {
-    target = new URL(scopedPath, approved.origin)
+    target = new URL(appendServerPath(approvedBase, scopedPath))
   } catch {
     return null
   }
   target.hash = ""
-  return target.origin === approved.origin ? target : null
+  return target.origin === new URL(approvedBase).origin ? target : null
 }
 
 function timeoutFor(value: number | undefined): number {

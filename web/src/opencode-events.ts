@@ -1,15 +1,13 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from "@capacitor/core"
 import { parseOpenCodeEvent, parseSSEFrame } from "./sse-parser.ts"
+import { appendServerPath } from "./serverConfig.ts"
 import type { ParsedOpenCodeEvent } from "./sse-parser.ts"
 export { parseOpenCodeEvent, parseSSEFrame }
 export type { ParsedOpenCodeEvent }
 
 export type EventStreamScope = "project" | "global"
 export function streamURL(serverURL: string, scope: EventStreamScope, directory?: string): string {
-  const url = new URL(serverURL)
-  const prefix = url.pathname === "/" ? "" : url.pathname.replace(/\/$/, "")
-  url.pathname = `${prefix}${scope === "global" ? "/global/event" : "/event"}`
-  url.search = ""
+  const url = new URL(appendServerPath(serverURL, scope === "global" ? "/global/event" : "/event"))
   if (scope === "project" && directory) url.searchParams.set("directory", directory)
   return url.toString()
 }

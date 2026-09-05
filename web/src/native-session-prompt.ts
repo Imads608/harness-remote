@@ -3,7 +3,7 @@ import { desktopRequestResult, isDesktopPlatform } from "./desktopBridge"
 import type { AttachmentPart } from "./attachments"
 import type { NativeSessionSurfaceTarget } from "./native-session-discovery"
 import { normalizeModel, sameModel } from "./native-session-model"
-import { authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
+import { appendServerPath, authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
 import type { ModelSelection } from "./types"
 import { messageText } from "./message-content"
 
@@ -241,7 +241,7 @@ export async function sendNativeSessionPrompt(
       ...routingHeaders(target.config, { preflight: !Capacitor.isNativePlatform() })
     }
     if (hasCredentials(target.config)) headers.Authorization = authHeader(target.config)
-    const url = `${baseUrl(target.config)}${path}`
+    const url = appendServerPath(baseUrl(target.config), path)
 
     if (Capacitor.isNativePlatform()) {
       let response
@@ -393,7 +393,7 @@ export async function sendNativeSessionCommand(
       ...routingHeaders(target.config, { preflight: !Capacitor.isNativePlatform() })
     }
     if (hasCredentials(target.config)) headers.Authorization = authHeader(target.config)
-    const url = `${baseUrl(target.config)}${path}`
+    const url = appendServerPath(baseUrl(target.config), path)
 
     if (Capacitor.isNativePlatform()) {
       let response

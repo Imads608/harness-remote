@@ -357,6 +357,7 @@ function sameServer(left: ServerConfig, right: ServerConfig): boolean {
     && left.port === right.port
     && left.username === right.username
     && left.password === right.password
+    && (left.proxyPath || "") === (right.proxyPath || "")
     && (left.agentId || "") === (right.agentId || "")
 }
 

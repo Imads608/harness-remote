@@ -1,7 +1,7 @@
 import { Capacitor, CapacitorHttp } from "@capacitor/core"
 import { desktopRequestResult, isDesktopPlatform } from "./desktopBridge"
 import type { NativeSessionSurfaceTarget } from "./native-session-discovery"
-import { authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
+import { appendServerPath, authHeader, baseUrl, hasCredentials, routingHeaders } from "./serverConfig"
 
 export type NativeSessionStopStatus = "accepted" | "pending" | "uncertain"
 
@@ -106,7 +106,7 @@ export async function stopNativeSession(
       ...routingHeaders(target.config, { preflight: !Capacitor.isNativePlatform() })
     }
     if (hasCredentials(target.config)) headers.Authorization = authHeader(target.config)
-    const url = `${baseUrl(target.config)}${path}`
+    const url = appendServerPath(baseUrl(target.config), path)
 
     if (Capacitor.isNativePlatform()) {
       let response

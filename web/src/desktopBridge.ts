@@ -67,6 +67,7 @@ function sameProfile(left: DesktopProfile, right: DesktopProfile): boolean {
     && left.port === right.port
     && left.username === right.username
     && left.password === right.password
+    && left.proxyPath === right.proxyPath
     && left.agentId === right.agentId
 }
 
@@ -93,7 +94,8 @@ export function toDesktopProfiles(profiles: readonly DesktopProfileSource[]): De
       host: normalized.host,
       port: normalized.port,
       username: normalized.username,
-      password: normalized.password
+      password: normalized.password,
+      ...(normalized.proxyPath ? { proxyPath: normalized.proxyPath } : {})
     }]
   })
 }

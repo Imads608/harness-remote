@@ -1,6 +1,6 @@
 import { Capacitor, CapacitorHttp } from "@capacitor/core"
 import { desktopRequestResult, isDesktopPlatform } from "./desktopBridge"
-import { authHeader, hasCredentials, machineBaseUrl } from "./serverConfig"
+import { appendServerPath, authHeader, hasCredentials, machineBaseUrl } from "./serverConfig"
 import type { MachineProject } from "./taskClient"
 import type { MachineSnapshot, ServerConfig } from "./types"
 
@@ -106,7 +106,7 @@ export async function discoverMachine(
     return remember(config, machineSnapshot(result.response.data))
   }
 
-  const target = `${machineBaseUrl(config)}/v1/machine`
+  const target = appendServerPath(machineBaseUrl(config), "/v1/machine")
   if (Capacitor.isNativePlatform()) {
     let response
     try {
@@ -159,7 +159,7 @@ export async function listMachineProjects(config: ServerConfig): Promise<Machine
     return rememberProjects(config, machineProjects(result.response.data))
   }
 
-  const target = `${machineBaseUrl(config)}/v1/projects`
+  const target = appendServerPath(machineBaseUrl(config), "/v1/projects")
   if (Capacitor.isNativePlatform()) {
     let response
     try {

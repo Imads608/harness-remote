@@ -118,6 +118,7 @@ function MachineEditor({ machine, isNew, onCancel, onSave }: MachineEditorProps)
     ...machine,
     name: name.trim() || host.trim() || "Machine",
     config: {
+      ...machine.config,
       backend: "opencode",
       host: host.trim(),
       port: Number(port),
@@ -172,7 +173,9 @@ function MachineManager({ machines, onClose, onPersist }: { machines: WorkspaceM
   const [confirmRemoveID, setConfirmRemoveID] = useState<string | null>(null)
   const [snapshots, setSnapshots] = useState<Record<string, MachineSnapshot | null | undefined>>({})
   const dialogRef = useRef<HTMLElement>(null)
-  const draft = useMemo(() => editingID === "new" ? createWorkspaceMachine() : machines.find((machine) => machine.id === editingID) || null, [editingID, machines])
+  const draft = useMemo(() => editingID === "new"
+    ? createWorkspaceMachine()
+    : machines.find((machine) => machine.id === editingID && !machine.provisioned) || null, [editingID, machines])
 
   useEffect(() => {
     let cancelled = false
@@ -189,6 +192,7 @@ function MachineManager({ machines, onClose, onPersist }: { machines: WorkspaceM
   useDialogDismiss(dialogRef, onClose)
 
   const save = (machine: WorkspaceMachine) => {
+    if (machine.provisioned) return
     if (editingID === "new") onPersist([...machines, machine])
     else onPersist(machines.map((candidate) => candidate.id === machine.id ? machine : candidate))
     setEditingID(null)
@@ -197,6 +201,7 @@ function MachineManager({ machines, onClose, onPersist }: { machines: WorkspaceM
   // window.confirm is a blocking native dialog that the Android WebView renders as a bare,
   // unstyled system alert on top of the app. An inline confirmation stays inside the product.
   const remove = (machine: WorkspaceMachine) => {
+    if (machine.provisioned) return
     onPersist(machines.filter((candidate) => candidate.id !== machine.id))
     setConfirmRemoveID(null)
     if (editingID === machine.id) setEditingID(null)
@@ -219,12 +224,14 @@ function MachineManager({ machines, onClose, onPersist }: { machines: WorkspaceM
               <div className="uw-machine-config-card" key={machine.id}>
                 <div className="uw-machine-config-main">
                   <strong>{snapshot?.machine.name || machine.name}</strong>
-                  <span>{machine.config.host}:{machine.config.port}</span>
+                  <span>{machine.config.host}:{machine.config.port}{machine.config.proxyPath}</span>
                   <small>{snapshot === undefined ? t("sf.checkingAgents") : snapshot ? t("sf.agentsDetected", { count: snapshot.agents.length }) : t("sf.machineUnavailable")}</small>
                   {snapshot?.agents.length ? <div className="uw-machine-harness-list">{snapshot.agents.map((agent) => <span className="uw-machine-harness" key={agent.id}><i className={agent.state} aria-hidden="true" /><strong>{agent.label}</strong><small>{machineAgentStateLabel(agent.state)}{agent.processID ? ` · PID ${agent.processID}` : ""}</small></span>)}</div> : null}
                 </div>
                 <div className="uw-machine-config-actions">
-                  {confirmRemoveID === machine.id ? (
+                  {machine.provisioned ? (
+                    <span className="uw-machine-managed">{t("sf.gatewayManaged")}</span>
+                  ) : confirmRemoveID === machine.id ? (
                     <>
                       <span className="uw-machine-confirm" role="alert">{t("sf.removeQuestion", { name: machine.name })}</span>
                       <button type="button" className="uw-manager-button" onClick={() => setConfirmRemoveID(null)}>{t("sf.keep")}</button>
@@ -407,6 +414,7 @@ function NativeSessionsWorkspace({
         const sameEndpoint = previous?.machine.config.host === machine.config.host
           && previous?.machine.config.port === machine.config.port
           && previous?.machine.config.username === machine.config.username
+          && previous?.machine.config.proxyPath === machine.config.proxyPath
         const consecutiveFailures = (previous?.consecutiveFailures || 0) + 1
         if (sameEndpoint && previous?.snapshot && consecutiveFailures < MACHINE_OFFLINE_FAILURE_THRESHOLD) {
           return {

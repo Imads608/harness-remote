@@ -46,6 +46,35 @@ above permits that browser origin; use the exact origin if you host the frontend
 Desktop and Android clients use the same machine address and credentials. Open the installed client
 and add the machine there; they do not need browser CORS configuration.
 
+### Authenticated same-origin gateway deployment
+
+The web client can be built below a gateway path while that gateway authenticates users and proxies
+machine daemons on the same origin:
+
+```bash
+cd harness-remote/web
+HARNESS_REMOTE_BASE_PATH=/agents/ npm run build
+```
+
+Serve `web/dist/` at `/agents/`. Before serving it, replace `/agents/config.js` with a machine list
+that contains paths only—never daemon URLs or credentials:
+
+```js
+window.HARNESS_REMOTE_GATEWAY_MODE = true
+window.HARNESS_REMOTE_PROVISIONED_MACHINES = [
+  { id: "arch-desktop", name: "Arch desktop", proxyPath: "/api/harness/arch-desktop" },
+  { id: "build-host", name: "Build host", proxyPath: "/api/harness/build-host" }
+]
+```
+
+Each proxy path must stay on the web client's origin. Route the path to the corresponding daemon,
+strip the prefix as appropriate, support streaming responses for SSE, and inject daemon Basic
+credentials only in the gateway's upstream request. The browser stores no credentials for these
+provisioned machines, and gateway-provisioned entries are read-only in the Machines UI. Keep the
+gateway authentication and authorization boundary in front of both `/agents/` and the proxy paths.
+Gateway mode disables and removes the app's service worker for that exact base path before rendering,
+so authenticated API responses and login redirects are never available through its offline cache.
+
 From a local repository checkout, the equivalent launcher command is:
 
 ```bash

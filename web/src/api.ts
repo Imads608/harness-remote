@@ -2,7 +2,7 @@ import { Capacitor, CapacitorHttp } from "@capacitor/core"
 import { desktopRequest, isDesktopPlatform } from "./desktopBridge"
 import { normalizeNativeResponseData } from "./nativeResponse"
 import { streamURL } from "./opencode-events"
-import { authHeader, baseUrl, hasCredentials, isValidServerConfig, routingHeaders } from "./serverConfig"
+import { appendServerPath, authHeader, baseUrl, hasCredentials, isValidServerConfig, routingHeaders } from "./serverConfig"
 import type { AttachmentPart } from "./attachments"
 import type {
   AgentOption,
@@ -167,7 +167,7 @@ async function requestWithHeaders<T>(config: ServerConfig, path: string, options
     return { data: response.data as T, headers: response.headers }
   }
 
-  const target = `${baseUrl(config)}${path}`
+  const target = appendServerPath(baseUrl(config), path)
   const headers: Record<string, string> = {
     Accept: "application/json",
     ...routingHeaders(config, { preflight: !Capacitor.isNativePlatform() })

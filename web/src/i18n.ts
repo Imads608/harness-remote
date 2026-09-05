@@ -427,6 +427,7 @@ type TranslationKey =
   | 'sf.checkingAgents'
   | 'sf.agentsDetected'
   | 'sf.machineUnavailable'
+  | 'sf.gatewayManaged'
   | 'sf.edit'
   | 'sf.remove'
   | 'sf.keep'
@@ -895,6 +896,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.checkingAgents': 'Checking coding agents…',
     'sf.agentsDetected': '{count} coding agents detected',
     'sf.machineUnavailable': 'Machine unavailable',
+    'sf.gatewayManaged': 'Managed by gateway',
     'sf.edit': 'Edit',
     'sf.remove': 'Remove',
     'sf.keep': 'Keep',
@@ -1363,6 +1365,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.checkingAgents': 'Verifica dei coding agent…',
     'sf.agentsDetected': '{count} coding agent rilevati',
     'sf.machineUnavailable': 'Macchina non raggiungibile',
+    'sf.gatewayManaged': 'Gestita dal gateway',
     'sf.edit': 'Modifica',
     'sf.remove': 'Rimuovi',
     'sf.keep': 'Mantieni',
@@ -1782,6 +1785,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.checkingAgents': '正在檢查編碼代理…',
     'sf.agentsDetected': '偵測到 {count} 個編碼代理',
     'sf.machineUnavailable': '機器無法使用',
+    'sf.gatewayManaged': '由閘道管理',
     'sf.edit': '編輯',
     'sf.remove': '移除',
     'sf.keep': '保留',
@@ -2247,6 +2251,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.checkingAgents': '正在检查编码代理…',
     'sf.agentsDetected': '检测到 {count} 个编码代理',
     'sf.machineUnavailable': '机器不可用',
+    'sf.gatewayManaged': '由网关管理',
     'sf.edit': '编辑',
     'sf.remove': '移除',
     'sf.keep': '保留',

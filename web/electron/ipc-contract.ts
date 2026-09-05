@@ -32,6 +32,7 @@ export type DesktopProfile = {
   port: number
   username: string
   password: string
+  proxyPath?: string
   agentId?: string
 }
 

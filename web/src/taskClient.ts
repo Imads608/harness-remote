@@ -1,7 +1,7 @@
 import { Capacitor, CapacitorHttp } from "@capacitor/core"
 import { desktopRequestResult, isDesktopPlatform } from "./desktopBridge"
 import { unwrapPayload } from "./machinePayload"
-import { authHeader, hasCredentials, machineBaseUrl } from "./serverConfig"
+import { appendServerPath, authHeader, hasCredentials, machineBaseUrl } from "./serverConfig"
 import type { AttachmentPart } from "./attachments"
 import type { ModelOption, ModelSelection, ServerConfig } from "./types"
 
@@ -306,7 +306,7 @@ async function machineRequest<T>(config: ServerConfig, path: string, options: Ta
     return parseTaskPayload<T>(result.response.data, path)
   }
 
-  const target = `${machineBaseUrl(config)}${path}`
+  const target = appendServerPath(machineBaseUrl(config), path)
   const headers = requestHeaders(config, options.body !== undefined)
   if (Capacitor.isNativePlatform()) {
     let response

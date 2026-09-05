@@ -2313,6 +2313,12 @@
   font-weight: 650;
 }
 
+.uw-machine-managed {
+  color: var(--td3-text-3);
+  font-size: 11px;
+  font-weight: 650;
+}
+
 .uw-manager-button {
   min-height: 38px;
   padding: 0 12px;

@@ -6,8 +6,10 @@ import { installCompletionAudioGuard } from "./completion-audio"
 import { StandaloneUniversalWorkspace } from "./components/standalone-universal-workspace"
 import { syncDesktopProfiles, isDesktopPlatform } from "./desktopBridge"
 import { ErrorBoundary } from "./ErrorBoundary"
+import { disableGatewayServiceWorker } from "./serviceWorker"
 import { SERVER_STORAGE_KEYS } from "./storageKeys"
 import {
+  isGatewayDeployment,
   loadWorkspaceMachines,
   persistWorkspaceMachines,
   type WorkspaceMachine
@@ -88,30 +90,53 @@ function HarnessRemoteBoundary() {
   )
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ErrorBoundary resetKeys={SERVER_STORAGE_KEYS}>
-      <HarnessRemoteBoundary />
-    </ErrorBoundary>
-  </React.StrictMode>
-)
+function renderApp() {
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <ErrorBoundary resetKeys={SERVER_STORAGE_KEYS}>
+        <HarnessRemoteBoundary />
+      </ErrorBoundary>
+    </React.StrictMode>
+  )
+}
 
-if (import.meta.env.DEV && !Capacitor.isNativePlatform() && !window.harnessDesktop?.platform.isDesktop) {
-  if ("serviceWorker" in navigator) {
-    void navigator.serviceWorker.getRegistrations().then((registrations) =>
-      Promise.all(registrations.map((registration) => registration.unregister()))
-    )
+function configureStandaloneServiceWorker() {
+  if (import.meta.env.DEV) {
+    if ("serviceWorker" in navigator) {
+      void navigator.serviceWorker.getRegistrations().then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister()))
+      )
+    }
+    if ("caches" in window) {
+      void caches.keys().then((keys) =>
+        Promise.all(keys.filter((key) => key.startsWith("harness-remote-")).map((key) => caches.delete(key)))
+      )
+    }
+    return
   }
-  if ("caches" in window) {
-    void caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key.startsWith("harness-remote-")).map((key) => caches.delete(key)))
-    )
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      const base = import.meta.env.BASE_URL
+      navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => {})
+    })
   }
 }
 
-if (import.meta.env.PROD && !Capacitor.isNativePlatform() && !window.harnessDesktop?.platform.isDesktop && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    const base = import.meta.env.BASE_URL
-    navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => {})
+const browserWebClient = !Capacitor.isNativePlatform() && !window.harnessDesktop?.platform.isDesktop
+if (browserWebClient && isGatewayDeployment() && "serviceWorker" in navigator) {
+  void disableGatewayServiceWorker(import.meta.env.BASE_URL).then((result) => {
+    if (result === "ready") {
+      renderApp()
+      return
+    }
+    if (result === "blocked") {
+      document.getElementById("root")!.textContent = "Harness Remote cannot start until its previous offline worker is removed."
+    }
+  }).catch(() => {
+    document.getElementById("root")!.textContent = "Harness Remote cannot start until its previous offline worker is removed."
   })
+} else {
+  renderApp()
+  if (browserWebClient) configureStandaloneServiceWorker()
 }
