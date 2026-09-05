@@ -2,6 +2,7 @@
 import path from "node:path"
 import { AcpClient } from "./acp-client.js"
 import { parseConfig, usage } from "./config.js"
+import { acpHarnessCapabilityContract } from "./harness-capability-contract.js"
 import { harnessProfile } from "./harness-profiles.js"
 import { loadMachineIdentity, MachineRegistry, trackAgentHostLifecycle } from "./machine-registry.js"
 import { createBridgeServer } from "./server.js"
@@ -29,7 +30,8 @@ if (config) {
     backend: profile.id,
     transport: "acp",
     state: "configured",
-    capabilities: profile.capabilities
+    capabilities: profile.capabilities,
+    contract: acpHarnessCapabilityContract(profile)
   })
 
   const acp = trackAgentHostLifecycle(
@@ -46,7 +48,10 @@ if (config) {
       historyLoader: profile.historyLoader,
       preserveListedTimestamps: profile.preserveListedTimestamps,
       reloadOnHistoryRefresh: profile.reloadOnHistoryRefresh,
-      replaySettleMs: profile.replaySettleMs
+      replaySettleMs: profile.replaySettleMs,
+      sessionRoots: profile.restrictSessionsToRoots
+        ? (config.roots.length ? config.roots : [process.cwd()])
+        : []
     }
   })
   let shuttingDown = false

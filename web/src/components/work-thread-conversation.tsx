@@ -45,6 +45,7 @@ const NATIVE_ROUTE_MODEL_SCOPE: AgentModelScope = {}
 
 const HARNESS_ICON_FILES: Record<string, string> = {
   codex: "codex.svg",
+  copilot: "copilot.svg",
   claude: "claude.svg",
   opencode: "opencode.svg",
   omp: "omp.svg",
@@ -122,7 +123,7 @@ function assistantMessageHasSignal(message: WorkThreadMessage): boolean {
 }
 
 function supportedBackend(value: string, fallback: BackendKind): BackendKind {
-  return value === "opencode" || value === "omp" || value === "pi" || value === "claude" || value === "codex"
+  return value === "opencode" || value === "omp" || value === "pi" || value === "claude" || value === "codex" || value === "copilot"
     ? value
     : fallback
 }

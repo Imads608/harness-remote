@@ -13,12 +13,13 @@ const BACKEND_EXECUTABLES = {
   pi: ["pi"],
   claude: ["claude"],
   codex: ["codex"],
+  copilot: ["copilot"],
   opencode: ["opencode"]
 }
 
 // This is product policy, not alphabetical order: prefer the broadest/most-tested ACP path first.
 // Reordering this changes the default primary on every multi-agent machine.
-const ACP_BACKENDS = ["codex", "claude", "omp", "pi"]
+const ACP_BACKENDS = ["codex", "claude", "omp", "pi", "copilot"]
 const VIRTUAL_INTERFACE = /^(docker|br-|veth|virbr|tun|tap|utun)/i
 
 function optionValue(args, name) {
@@ -73,7 +74,7 @@ export function resolveBackend(args, detected = detectBackends()) {
   if (detected.length > 1) {
     throw new Error(`Multiple supported agent CLIs were found on PATH (${detected.join(", ")}). Re-run with --backend <${detected.join("|")}>.`)
   }
-  throw new Error("No supported agent CLI was found on PATH. Install/select omp, pi, claude, codex, or opencode, then re-run with --backend if needed.")
+  throw new Error("No supported agent CLI was found on PATH. Install/select omp, pi, claude, codex, copilot, or opencode, then re-run with --backend if needed.")
 }
 
 /** Choose the low-friction startup shape without executing any discovered CLI. */
@@ -82,8 +83,13 @@ export function resolveLaunchPlan(args, detected = detectBackends()) {
   const forceSingle = hasOption(args, "--single")
 
   if (detected.length === 0) {
-    if (explicit) return { mode: "single", backend: explicit, detected }
-    throw new Error("No supported agent CLI was found on PATH. Install/select omp, pi, claude, codex, or opencode, then re-run with --backend if needed.")
+    if (explicit) {
+      if (explicit === "copilot" && !forceSingle) {
+        return { mode: "daemon", backend: explicit, detected: [explicit], openCode: false }
+      }
+      return { mode: "single", backend: explicit, detected }
+    }
+    throw new Error("No supported agent CLI was found on PATH. Install/select omp, pi, claude, codex, copilot, or opencode, then re-run with --backend if needed.")
   }
 
   if (forceSingle) {
@@ -94,7 +100,15 @@ export function resolveLaunchPlan(args, detected = detectBackends()) {
     return { mode: "single", backend, detected }
   }
 
-  if (detected.length === 1) return { mode: "single", backend: explicit ?? detected[0], detected }
+  if (detected.length === 1) {
+    const backend = explicit ?? detected[0]
+    // Copilot support is Session-first only. The legacy single bridge has no agent-scoped routes,
+    // so launching it would advertise a machine that the current client cannot actually control.
+    if (backend === "copilot") {
+      return { mode: "daemon", backend, detected, openCode: false }
+    }
+    return { mode: "single", backend, detected }
+  }
 
   if (explicit === "opencode") return { mode: "single", backend: explicit, detected }
   if (explicit && !ACP_BACKENDS.includes(explicit)) {
@@ -193,7 +207,7 @@ export function lanAddresses(interfaces = networkInterfaces()) {
 }
 
 export function launcherUsage() {
-  return `Usage: harness-remote [options]\n\nQuick start options:\n  --backend <name>       Select omp, pi, claude, codex, or opencode (on multi-agent machines, selects the daemon primary)\n  --single               Force the legacy single-backend path instead of the machine daemon\n  --host <host>          Bind host (quick-start default: 0.0.0.0)\n  --port <port>          Preferred port (OpenCode single-host default: 4096; daemon/ACP default: 4097)\n  --username <username>  Override generated Basic Auth username\n  --password <password>  Override generated Basic Auth password\n  --help                 Show this help\n\nWith one detected agent, Harness starts the existing single-backend path. With multiple detected agents and at least one ACP backend, it starts the machine daemon automatically; OpenCode is included when installed and receives a free loopback port automatically.`
+  return `Usage: harness-remote [options]\n\nQuick start options:\n  --backend <name>       Select omp, pi, claude, codex, copilot, or opencode (on multi-agent machines, selects the daemon primary)\n  --single               Force the legacy single-backend path instead of the machine daemon\n  --host <host>          Bind host (quick-start default: 0.0.0.0)\n  --port <port>          Preferred port (OpenCode single-host default: 4096; daemon/ACP default: 4097)\n  --username <username>  Override generated Basic Auth username\n  --password <password>  Override generated Basic Auth password\n  --help                 Show this help\n\nWith one detected agent, Harness starts the existing single-backend path. With multiple detected agents and at least one ACP backend, it starts the machine daemon automatically; OpenCode is included when installed and receives a free loopback port automatically.`
 }
 
 export async function startManagedOpenCode({ host, port, username, password, command = "opencode", Host = ManagedOpenCodeHost } = {}) {

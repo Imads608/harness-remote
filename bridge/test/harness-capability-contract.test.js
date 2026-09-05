@@ -8,8 +8,9 @@ test("ACP capability contract preserves runtime-specific model controls without 
   const pi = acpHarnessCapabilityContract(harnessProfile("pi"))
   const codex = acpHarnessCapabilityContract(harnessProfile("codex"))
   const claude = acpHarnessCapabilityContract(harnessProfile("claude"))
+  const copilot = acpHarnessCapabilityContract(harnessProfile("copilot"))
 
-  for (const contract of [omp, pi, codex, claude]) {
+  for (const contract of [omp, pi, codex, claude, copilot]) {
     assert.equal(contract.version, 2)
     assert.equal(contract.protocol, "acp")
     assert.equal(contract.transport.control, "stdio-json-rpc")
@@ -24,6 +25,7 @@ test("ACP capability contract preserves runtime-specific model controls without 
   assert.ok(codex.models.variantConfigIDs.some((id) => ["reasoning_effort", "reasoningEffort"].includes(id)))
   assert.deepEqual(claude.models.variantConfigIDs, [])
   assert.equal(claude.models.variants, "runtime-advertised-only")
+  assert.deepEqual(copilot.models.variantConfigIDs, ["reasoning_effort"])
 })
 
 test("Session-first contract separates discovery, transcript reads and writer acquisition per ACP harness", () => {
@@ -31,6 +33,7 @@ test("Session-first contract separates discovery, transcript reads and writer ac
   const pi = acpHarnessCapabilityContract(harnessProfile("pi"))
   const codex = acpHarnessCapabilityContract(harnessProfile("codex"))
   const claude = acpHarnessCapabilityContract(harnessProfile("claude"))
+  const copilot = acpHarnessCapabilityContract(harnessProfile("copilot"))
 
   assert.equal(codex.sessions.transcript, "native-journal")
   assert.equal(codex.sessions.externalWriterObservation, "supported-via-journal")
@@ -48,8 +51,11 @@ test("Session-first contract separates discovery, transcript reads and writer ac
   assert.equal(claude.sessions.transcript, "session-load")
   assert.equal(claude.sessions.externalWriterObservation, "unverified-session-load")
   assert.equal(claude.sessions.writerOwnership, "adapter-defined")
+  assert.equal(copilot.sessions.transcript, "session-load")
+  assert.equal(copilot.sessions.externalWriterObservation, "unverified-session-load")
+  assert.equal(copilot.sessions.writerOwnership, "adapter-defined")
 
-  for (const contract of [omp, pi, codex, claude]) {
+  for (const contract of [omp, pi, codex, claude, copilot]) {
     assert.equal(contract.sessions.stop, "owned-session-native-cancel")
   }
 })

@@ -51,7 +51,8 @@ for (const [backend, transport] of [
   ["omp", "acp"],
   ["pi", "acp"],
   ["claude", "acp"],
-  ["codex", "acp"]
+  ["codex", "acp"],
+  ["copilot", "acp"]
 ]) {
   assert.equal(canCreateNativeSession({
     id: backend,

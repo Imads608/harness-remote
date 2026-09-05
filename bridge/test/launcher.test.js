@@ -5,8 +5,8 @@ import { bridgeEnvironment, buildBridgeArgs, buildDaemonArgs, createManagedShutd
 
 test("detects executable agent files on PATH without running them", () => {
   const pathValue = ["/bin", "/tools"].join(path.delimiter)
-  const existing = new Set([path.join("/tools", "codex")])
-  assert.deepEqual(detectBackends({ pathValue, platform: "linux", exists: (candidate) => existing.has(candidate), access: () => {} }), ["codex"])
+  const existing = new Set([path.join("/tools", "codex"), path.join("/tools", "copilot")])
+  assert.deepEqual(detectBackends({ pathValue, platform: "linux", exists: (candidate) => existing.has(candidate), access: () => {} }), ["codex", "copilot"])
 })
 
 test("ignores non-executable PATH entries on Unix", () => {
@@ -71,6 +71,32 @@ test("keeps explicit OpenCode on the single-host path", () => {
 
 test("starts a daemon without OpenCode when multiple ACP agents are detected", () => {
   assert.deepEqual(resolveLaunchPlan([], ["omp", "claude"]), { mode: "daemon", backend: "claude", detected: ["omp", "claude"], openCode: false })
+})
+
+test("uses native Copilot ACP as a machine-daemon backend", () => {
+  assert.deepEqual(resolveLaunchPlan([], ["copilot"]), {
+    mode: "daemon",
+    backend: "copilot",
+    detected: ["copilot"],
+    openCode: false
+  })
+  assert.deepEqual(resolveLaunchPlan(["--backend", "copilot"], ["claude", "copilot"]), {
+    mode: "daemon",
+    backend: "copilot",
+    detected: ["claude", "copilot"],
+    openCode: false
+  })
+  assert.deepEqual(resolveLaunchPlan(["--backend", "copilot"], []), {
+    mode: "daemon",
+    backend: "copilot",
+    detected: ["copilot"],
+    openCode: false
+  })
+  assert.deepEqual(resolveLaunchPlan(["--single", "--backend", "copilot"], []), {
+    mode: "single",
+    backend: "copilot",
+    detected: []
+  })
 })
 
 test("keeps the legacy resolver strict for callers that still require one backend", () => {

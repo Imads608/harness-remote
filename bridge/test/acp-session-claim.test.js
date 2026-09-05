@@ -101,11 +101,11 @@ test("failed writer acquisition does not leave phantom ownership and can be retr
   )
   assert.equal(loadRequests(acp).length, 1)
   assert.equal((await service.listSessions())[0].external, true)
-  assert.throws(() => service.abort("native-1"), /not active in the app/)
+  await assert.rejects(service.abort("native-1"), /not active in the app/)
 
   assert.equal(await service.claimSession("native-1"), true)
   assert.equal(loadRequests(acp).length, 2)
-  assert.doesNotThrow(() => service.abort("native-1"))
+  await assert.doesNotReject(service.abort("native-1"))
   assert.deepEqual(acp.notifications.at(-1), ["session/cancel", { sessionId: "native-1" }])
 })
 

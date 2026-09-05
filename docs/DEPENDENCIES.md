@@ -170,6 +170,42 @@ an Activity section in a finished conversation reads `Working` for good, snapsho
 shapes, and whether session visibility or image capability changes. The app intentionally does not
 expose agent selection, server slash commands or VCS/diff for this backend.
 
+### GitHub Copilot CLI — native ACP over stdio
+
+- **Harness:** the standalone GitHub Copilot CLI, tested with `1.0.83`.
+- **Transport:** Copilot's built-in ACP server, launched as `copilot --acp --stdio`; there is no
+  third-party adapter or separately embedded agent runtime.
+- **Authentication:** the host must already be authenticated with `copilot /login` or through the
+  GitHub credentials Copilot supports. Harness Remote inherits the host environment and does not
+  copy credentials into its own configuration.
+
+**Verified against the running CLI:**
+
+| Fact | What depends on it |
+|---|---|
+| `initialize` advertises `copilot-login`, image prompts, Session listing/loading/closing, and runtime config options | authentication, attachments and the supported Session surface |
+| `session/list` is machine-global and paginated with `nextCursor` | `AcpClient.listSessions` follows every page, deduplicates boundary entries, and the Copilot profile filters sessions to configured roots |
+| `session/load` replays `user_message_chunk`, `agent_message_chunk`, `tool_call` and `tool_call_update` notifications | native transcript and activity rendering |
+| Replay chunks may omit `messageId` | the shared ACP translator synthesizes stable in-process message identities |
+| The `model` and `reasoning_effort` config options are runtime-advertised | model and effort choices come from Copilot rather than a hard-coded catalog |
+| `session/resume` is not advertised | continuation uses `session/load`; the CLI's `--resume` flag is not treated as an ACP capability |
+
+Copilot does not currently provide Harness Remote with a proven native rename/delete operation,
+question surface, slash-command catalog or todo/plan stream, so those controls stay hidden. Tool
+permission requests are answered with `allow_once`, matching the other ACP profiles; a Copilot
+Session reached through Harness Remote can therefore edit files and run commands unattended.
+
+`session/load` is the only available transcript path and may acquire writer ownership. Passive
+observation of a Session that another Copilot process currently owns is consequently unverified.
+Copilot's native index spans the whole machine, so this profile filters that index by authoritative
+Session cwd and rejects reads or mutations outside the configured `--root` directories. The bridge
+deliberately does not read `~/.copilot/session-store.db`: that schema is private and does not carry
+the complete ACP tool/reasoning representation.
+
+**Watch:** whether `--stdio` becomes part of the documented CLI contract, changes to paginated
+Session listing, replay message identity, permission request behavior, and new native Session
+capabilities. Revalidate before lowering the tested Copilot CLI version.
+
 ### Codex CLI — ACP over stdio, via the official adapter
 
 - **Adapter:** [`@agentclientprotocol/codex-acp`](https://www.npmjs.com/package/@agentclientprotocol/codex-acp),

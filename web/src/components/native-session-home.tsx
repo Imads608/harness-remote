@@ -84,6 +84,7 @@ type SessionFilter = "all" | "working" | "attention"
 
 const HARNESS_ICON_FILES: Record<string, string> = {
   codex: "codex.svg",
+  copilot: "copilot.svg",
   claude: "claude.svg",
   opencode: "opencode.svg",
   omp: "omp.svg",

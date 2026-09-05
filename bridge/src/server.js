@@ -110,15 +110,6 @@ function modelWireName(model) {
   return model.providerID && modelID ? `${model.providerID}/${modelID}` : undefined
 }
 
-function sameListedDirectory(left, right) {
-  if (!left || !right) return false
-  const normalize = (value) => {
-    const resolved = path.resolve(value).replace(/[\\/]+$/, "")
-    return process.platform === "win32" ? resolved.toLowerCase() : resolved
-  }
-  return normalize(left) === normalize(right)
-}
-
 function listedSessionView(session, status, liveUpdatedAt = 0) {
   const listedUpdated = Date.parse(session.updatedAt ?? "")
   const listedTimestamp = Number.isFinite(listedUpdated) ? listedUpdated : 0
@@ -229,14 +220,12 @@ export function createBridgeServer({ config, acp, serviceOptions, machineRegistr
   // freshly updated on every poll.
   const listVisibleSessionMetadata = async (directory) => {
     const [sessions, deletedSessionIDs] = await Promise.all([
-      acp.listSessions(),
+      service.sessionIndex(directory),
       service.deletedSessionIDs()
     ])
     const visible = new Map(
       sessions
-        .filter((session) => !directory || sameListedDirectory(session.cwd, directory))
         .filter((session) => !hiddenSessionIDs?.has(session.sessionId))
-        .filter((session) => !deletedSessionIDs.has(session.sessionId))
         .map((session) => {
           const liveUpdatedAt = liveSessionActivity.get(session.sessionId) ?? 0
           const listedUpdated = Date.parse(session.updatedAt ?? "")
@@ -461,7 +450,7 @@ export function createBridgeServer({ config, acp, serviceOptions, machineRegistr
           return
         }
         if (request.method === "POST" && operation === "abort") {
-          service.abort(sessionID)
+          await service.abort(sessionID)
           writeJSON(response, 200, true)
           return
         }

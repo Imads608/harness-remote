@@ -18,6 +18,7 @@ const agentDefinitions = [
   ["omp", "Oh My Pi", "acp"],
   ["pi", "PI", "acp"],
   ["codex", "Codex CLI", "acp"],
+  ["copilot", "GitHub Copilot CLI", "acp"],
   ["claude", "Claude Code", "acp"]
 ]
 

@@ -238,8 +238,28 @@ export class AcpClient extends EventEmitter {
 
   async listSessions() {
     await this.start()
-    const result = await this.request("session/list", {})
-    return result.sessions ?? []
+    const sessions = []
+    const sessionIDs = new Set()
+    const cursors = new Set()
+    let cursor
+    for (;;) {
+      const result = await this.request("session/list", cursor ? { cursor } : {})
+      for (const session of result.sessions ?? []) {
+        const sessionID = typeof session?.sessionId === "string" ? session.sessionId : undefined
+        if (sessionID && sessionIDs.has(sessionID)) continue
+        if (sessionID) sessionIDs.add(sessionID)
+        sessions.push(session)
+      }
+      const nextCursor = typeof result.nextCursor === "string" && result.nextCursor
+        ? result.nextCursor
+        : undefined
+      if (!nextCursor) return sessions
+      if (cursors.has(nextCursor)) {
+        throw new Error(`ACP adapter repeated session/list cursor: ${nextCursor}`)
+      }
+      cursors.add(nextCursor)
+      cursor = nextCursor
+    }
   }
 
   close() {

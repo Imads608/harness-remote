@@ -8,7 +8,7 @@ lets you see and continue the native Sessions it exposes.
 
 Harness Remote 3 changes the normal startup contract. HR2 commonly connected the client directly to one OpenCode server or one standalone ACP bridge per harness. HR3 is machine-first: the client expects a Harness **Machine** endpoint and discovers Projects, harnesses and native Sessions through it.
 
-- Existing standalone ACP bridge commands such as `npx --yes ./bridge --backend omp|pi|claude|codex ...` are still supported as compatibility paths. They can expose native Sessions, but they do not provide the complete HR3 Project catalog/new-Session workflow.
+- Existing standalone ACP bridge commands such as `npx --yes ./bridge --backend omp|pi|claude|codex|copilot ...` are still supported as compatibility paths. They can expose native Sessions, but they do not provide the complete HR3 Project catalog/new-Session workflow.
 - A direct `opencode serve` process from an HR2 setup is not a Harness Machine endpoint and cannot be added under **Machines** in HR3.
 - HR2 saved server profiles are kept in storage for legacy code paths, but they are not automatically converted into HR3 `workspaceMachines`. After upgrading, add the machine again in **Machines → Add machine**.
 - For the full HR3 experience, stop the old per-harness public endpoints and use the launcher or machine daemon described below. Legacy single-backend startup is intended for compatibility, not as the preferred HR3 onboarding path.
@@ -66,7 +66,8 @@ package has been published.
 
 The launcher inspects `PATH` without executing discovered agent binaries and chooses the least-friction compatible runtime:
 
-- with exactly one supported CLI, it preserves the existing single-backend startup path;
+- with exactly one supported CLI, it preserves the existing single-backend startup path, except
+  Copilot, which uses the machine daemon because Copilot support is Session-first;
 - with multiple supported CLIs and at least one ACP-backed agent, it starts the machine daemon automatically;
 - the daemon selects one detected ACP backend as its primary host and includes managed OpenCode when OpenCode is installed;
 - `--backend <name>` selects the ACP primary on a multi-agent machine;
@@ -75,7 +76,7 @@ The launcher inspects `PATH` without executing discovered agent binaries and cho
 - credentials are generated automatically and kept out of child-process argv;
 - the LAN address and credentials to enter in the client are printed before startup continues.
 
-The supported CLI names are `omp`, `pi`, `claude`, `codex`, and `opencode`.
+The supported CLI names are `omp`, `pi`, `claude`, `codex`, `copilot`, and `opencode`.
 
 For example, on a workstation with Codex, Claude Code and OpenCode installed, the plain command:
 
@@ -89,7 +90,7 @@ The current automatic multi-host shape is deliberately precise:
 
 ```text
 Harness daemon :4097
-  ├── one detected ACP primary (Codex / Claude / OMP / PI)
+  ├── one detected ACP primary (Codex / Copilot / Claude / OMP / PI)
   └── OpenCode, when installed, as a managed loopback HTTP host
 ```
 

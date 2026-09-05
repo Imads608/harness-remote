@@ -264,7 +264,7 @@ test("cancelling a turn leaves no invented interruption in the transcript", asyn
     const sessionID = (await service.createSession({ directory: "/repo" })).id
     acp.queueTurn({ reasoning: ["Half a thought"], text: ["Never sent"] })
     const running = service.promptAndWait(sessionID, "Prompt 1").catch(() => undefined)
-    service.abort(sessionID)
+    await service.abort(sessionID)
     await running
 
     assert.equal(service.status(sessionID).type, "idle", "a cancelled Session must read Ready")

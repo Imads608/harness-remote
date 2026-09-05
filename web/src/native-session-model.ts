@@ -117,7 +117,7 @@ const PAGE_MODEL_BACKENDS = new Set(["omp", "pi", "codex"])
 export async function resolveNativeSessionTargetModel(
   target: NativeSessionSurfaceTarget
 ): Promise<NativeSessionSurfaceTarget> {
-  if (target.backend !== "opencode" && target.backend !== "claude" && !PAGE_MODEL_BACKENDS.has(target.backend)) return target
+  if (target.backend !== "opencode" && target.backend !== "claude" && target.backend !== "copilot" && !PAGE_MODEL_BACKENDS.has(target.backend)) return target
   try {
     const page = await api.loadMessagePage(
       target.config,
@@ -128,7 +128,7 @@ export async function resolveNativeSessionTargetModel(
       false
     )
     let model = page.model ?? (target.backend === "opencode" ? lastNativeMessageModel(page.messages) : null)
-    if (!model && target.backend === "claude") {
+    if (!model && (target.backend === "claude" || target.backend === "copilot")) {
       const models = await api.listModels(target.config, target.directory, target.sessionID)
       const current = models.find((candidate) => candidate.isDefault)
       if (current) model = {

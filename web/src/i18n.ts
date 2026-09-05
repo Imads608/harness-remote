@@ -217,6 +217,7 @@ type TranslationKey =
   | 'connect.harness.pi'
   | 'connect.harness.claude'
   | 'connect.harness.codex'
+  | 'connect.harness.copilot'
   | 'connect.addressHint'
   | 'connect.runOnHost'
   | 'connect.copyCommand'
@@ -751,6 +752,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'connect.harness.pi': 'Connect to PI through the ACP bridge.',
     'connect.harness.claude': 'Connect to Claude Code through the ACP bridge.',
     'connect.harness.codex': 'Connect to Codex CLI through the ACP bridge.',
+    'connect.harness.copilot': 'Connect to GitHub Copilot CLI through its native ACP server.',
     'connect.addressHint': 'Use the LAN address of the machine that runs the harness.',
     'connect.runOnHost': 'Run on the host machine',
     'connect.copyCommand': 'Copy command',
@@ -867,7 +869,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.agentLabel': 'Agent {name}',
     'sf.filesLabel': '{count} files',
     'sf.addFirstMachine': 'Add your first machine',
-    'sf.addFirstMachineBody': 'Connect the computer that runs Codex, Claude, OpenCode, OMP or PI. Its native Sessions will appear here directly.',
+    'sf.addFirstMachineBody': 'Connect the computer that runs Codex, Copilot, Claude, OpenCode, OMP or PI. Its native Sessions will appear here directly.',
     'sf.addMachine': 'Add machine',
     'sf.preparing': 'Preparing Harness Remote',
     'sf.connectingMachines': 'Connecting to your machines…',
@@ -1218,6 +1220,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'connect.harness.pi': 'Connessione a PI tramite bridge ACP.',
     'connect.harness.claude': 'Connessione a Claude Code tramite bridge ACP.',
     'connect.harness.codex': 'Connessione a Codex CLI tramite bridge ACP.',
+    'connect.harness.copilot': 'Connessione a GitHub Copilot CLI tramite il suo server ACP nativo.',
     'connect.addressHint': 'Usa l’indirizzo LAN del computer che esegue l’harness.',
     'connect.runOnHost': 'Esegui sul computer host',
     'connect.copyCommand': 'Copia comando',
@@ -1334,7 +1337,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.agentLabel': 'Agente {name}',
     'sf.filesLabel': '{count} file',
     'sf.addFirstMachine': 'Aggiungi la tua prima macchina',
-    'sf.addFirstMachineBody': 'Collega il computer su cui girano Codex, Claude, OpenCode, OMP o PI. Le sue sessioni native compariranno qui direttamente.',
+    'sf.addFirstMachineBody': 'Collega il computer su cui girano Codex, Copilot, Claude, OpenCode, OMP o PI. Le sue sessioni native compariranno qui direttamente.',
     'sf.addMachine': 'Aggiungi macchina',
     'sf.preparing': 'Preparazione di Harness Remote',
     'sf.connectingMachines': 'Connessione alle tue macchine…',
@@ -1753,7 +1756,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.agentLabel': '代理 {name}',
     'sf.filesLabel': '{count} 個檔案',
     'sf.addFirstMachine': '新增第一部機器',
-    'sf.addFirstMachineBody': '連線執行 Codex、Claude、OpenCode、OMP 或 PI 的電腦，其原生工作階段會直接顯示在這裡。',
+    'sf.addFirstMachineBody': '連線執行 Codex、Copilot、Claude、OpenCode、OMP 或 PI 的電腦，其原生工作階段會直接顯示在這裡。',
     'sf.addMachine': '新增機器',
     'sf.preparing': '正在準備 Harness Remote',
     'sf.connectingMachines': '正在連線到你的機器…',
@@ -2034,6 +2037,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'connect.harness.pi': '通过 ACP 桥接器连接到 PI。',
     'connect.harness.claude': '通过 ACP 桥接器连接到 Claude Code。',
     'connect.harness.codex': '通过 ACP 桥接器连接到 Codex CLI。',
+    'connect.harness.copilot': '通过原生 ACP 服务器连接到 GitHub Copilot CLI。',
     'connect.addressHint': '请使用运行 harness 的电脑的局域网地址。',
     'connect.runOnHost': '在主机上运行',
     'connect.copyCommand': '复制命令',
@@ -2217,7 +2221,7 @@ const translations: Record<LanguageCode, Partial<Record<TranslationKey, string>>
     'sf.agentLabel': '代理 {name}',
     'sf.filesLabel': '{count} 个文件',
     'sf.addFirstMachine': '添加第一台机器',
-    'sf.addFirstMachineBody': '连接运行 Codex、Claude、OpenCode、OMP 或 PI 的计算机，其原生会话将直接显示在这里。',
+    'sf.addFirstMachineBody': '连接运行 Codex、Copilot、Claude、OpenCode、OMP 或 PI 的计算机，其原生会话将直接显示在这里。',
     'sf.addMachine': '添加机器',
     'sf.preparing': '正在准备 Harness Remote',
     'sf.connectingMachines': '正在连接你的机器…',

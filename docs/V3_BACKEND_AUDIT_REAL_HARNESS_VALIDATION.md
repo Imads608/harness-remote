@@ -1,6 +1,6 @@
 # Harness Remote 3.0 backend audit: real-harness validation
 
-This is the manual release gate for #287 / draft PR #288. Run it on the machine that has the real OpenCode, Codex, Claude, PI and OMP credentials/configuration. It is intentionally non-destructive apart from creating the hidden prompt-less ACP catalog Sessions used by model discovery.
+This is the manual release gate for #287 / draft PR #288. Run it on the machine that has the real OpenCode, Codex, Copilot, Claude, PI and OMP credentials/configuration. It is intentionally non-destructive apart from creating the hidden prompt-less ACP catalog Sessions used by model discovery.
 
 Do not use results from mocks as a substitute for this gate.
 
@@ -8,7 +8,7 @@ Do not use results from mocks as a substitute for this gate.
 
 Run the daemon from `fix/v3-backend-reliability-audit` with the same host, port, roots and credentials used by the Android app.
 
-Keep the daemon terminal visible. Capture any `[opencode]`, `[pi]`, `[codex]`, `[claude]`, `[omp]`, `MaxListenersExceededWarning`, connection or timeout messages.
+Keep the daemon terminal visible. Capture any `[opencode]`, `[pi]`, `[codex]`, `[copilot]`, `[claude]`, `[omp]`, `MaxListenersExceededWarning`, connection or timeout messages.
 
 ## 2. Capture a cold baseline and all model catalogs
 
@@ -23,7 +23,7 @@ export HARNESS_REMOTE_PASSWORD
 npm run audit:probe > ../backend-audit-cold.json
 ```
 
-Use the actual daemon URL/port/username. The password is read silently and is never emitted by the probe. The report contains sanitized `/v1/diagnostics` plus the model catalogs for OpenCode, Codex, Claude, PI and OMP.
+Use the actual daemon URL/port/username. The password is read silently and is never emitted by the probe. The report contains sanitized `/v1/diagnostics` plus the model catalogs for OpenCode, Codex, Copilot, Claude, PI and OMP.
 
 Expected at rest after the probe settles:
 
@@ -75,7 +75,7 @@ If the warning still appears while diagnostics prove exactly one Harness Remote 
 
 ## 5. Conversation correctness for every harness
 
-Run this block for OpenCode, Codex, Claude, PI and OMP wherever the real harness is configured:
+Run this block for OpenCode, Codex, Copilot, Claude, PI and OMP wherever the real harness is configured:
 
 1. Create/open a Conversation in the real project directory.
 2. Send at least 10 ordinary turns.
@@ -116,7 +116,7 @@ Pass criteria:
 
 ## 8. Daemon restart / resume
 
-For at least OpenCode, PI and one of Codex/Claude/OMP:
+For at least OpenCode, PI and one of Codex/Copilot/Claude/OMP:
 
 1. Complete several turns.
 2. Restart only the Harness Remote daemon.
@@ -140,6 +140,7 @@ For each harness record the real values observed by the probe/UI:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | OpenCode | `/config/providers` | | | provider `variants` | | | | HTTP + daemon SSE fan-out | |
 | Codex | ACP `configOptions` | | | `reasoning_effort` only if advertised | | | | ACP stdio -> bridge events | |
+| Copilot | ACP `configOptions` | | | `reasoning_effort` only if advertised | | | | native ACP stdio -> bridge events | |
 | Claude | ACP `configOptions` | | | none unless runtime advertises one | | | | ACP stdio -> bridge events | |
 | PI | ACP `configOptions` | | | `thinkingLevel`/runtime alias only if advertised | | | | ACP stdio -> bridge events | |
 | OMP | ACP `configOptions` | | | `thinking` only if advertised | | | | ACP stdio -> bridge events | |

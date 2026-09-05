@@ -26,11 +26,13 @@ assert.equal(migrated.length, 2, 'each legacy backend configuration should migra
 assert.deepEqual(migrated.map((profile) => profile.config.backend), ['opencode', 'omp'])
 
 const added = createServerProfile('Work PI', 'pi')
-const profiles = [...migrated, added]
-persistServerProfiles(profiles, added.id)
-assert.equal(JSON.parse(storage.get(SERVER_PROFILES_STORAGE_KEY)).length, 3, 'saved profiles should persist as one collection')
-assert.equal(storage.get(ACTIVE_PROFILE_STORAGE_KEY), added.id, 'the selected server should persist independently')
-assert.equal(loadActiveServerProfile(loadServerProfiles()).name, 'Work PI', 'the saved selection should be restored at launch')
+const copilot = createServerProfile('Desktop Copilot', 'copilot')
+const profiles = [...migrated, added, copilot]
+persistServerProfiles(profiles, copilot.id)
+assert.equal(JSON.parse(storage.get(SERVER_PROFILES_STORAGE_KEY)).length, 4, 'saved profiles should persist as one collection')
+assert.equal(storage.get(ACTIVE_PROFILE_STORAGE_KEY), copilot.id, 'the selected server should persist independently')
+assert.equal(loadActiveServerProfile(loadServerProfiles()).name, 'Desktop Copilot', 'the saved selection should be restored at launch')
+assert.equal(loadActiveServerProfile(loadServerProfiles()).config.backend, 'copilot', 'Copilot must survive profile persistence')
 
 // An upgrade can have a new collection created before all older backend-specific keys are migrated.
 // Loading must retain that OMP entry instead of letting a reload overwrite its only representation.
@@ -67,6 +69,15 @@ storage.set(SERVER_PROFILES_STORAGE_KEY, JSON.stringify([{
 const repaired = loadServerProfiles()[0]
 assert.equal(repaired.config.backend, 'pi', 'an unmistakably named PI profile saved by the old fallback must recover PI')
 assert.equal(repaired.config.agentId, 'pi', 'the repaired PI profile must target the PI daemon route')
+
+storage.set(SERVER_PROFILES_STORAGE_KEY, JSON.stringify([{
+  id: 'old-copilot-wizard-profile',
+  name: 'GitHub Copilot CLI server',
+  config: { backend: 'codex', host: 'workstation.local', port: 4097, username: 'harness', password: 'secret', agentId: 'codex' }
+}]))
+const repairedCopilot = loadServerProfiles()[0]
+assert.equal(repairedCopilot.config.backend, 'copilot', 'an unmistakably named Copilot profile saved by the old fallback must recover Copilot')
+assert.equal(repairedCopilot.config.agentId, 'copilot', 'the repaired Copilot profile must target the Copilot daemon route')
 
 storage.set(SERVER_PROFILES_STORAGE_KEY, JSON.stringify([
   { id: 'known-daemon-profile', name: 'Codex CLI server', config: { backend: 'codex', host: 'localhost', port: 5001, username: 'harness', password: 'secret', agentId: 'codex' } },

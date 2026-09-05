@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const DEFAULT_AGENTS = ["opencode", "codex", "claude", "pi", "omp"]
+const DEFAULT_AGENTS = ["opencode", "codex", "copilot", "claude", "pi", "omp"]
 const MODEL_WAIT_MS = 4_000
 const MODEL_POLL_MS = 750
 const MODEL_TOTAL_MS = 120_000

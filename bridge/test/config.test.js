@@ -57,6 +57,13 @@ test("selects Codex defaults for the ACP backend", () => {
   assert.match(parseConfig(["--backend", "codex"], {}).acpArgs[1], /@\d+\.\d+\.\d+$/, "the adapter version must stay pinned")
 })
 
+test("selects the native Copilot ACP server", () => {
+  assert.equal(parseConfig(["--backend", "copilot"], {}).backend, "copilot")
+  assert.equal(parseConfig(["--backend", "copilot"], {}).acpCommand, "copilot")
+  assert.deepEqual(parseConfig(["--backend", "copilot"], {}).acpArgs, ["--acp", "--stdio"])
+  assert.deepEqual(parseConfig([], { OMP_BRIDGE_BACKEND: "copilot" }).acpArgs, ["--acp", "--stdio"])
+})
+
 test("prefers generic environment names while retaining OMP aliases", () => {
   const generic = parseConfig([], {
     HARNESS_REMOTE_BACKEND: "pi",

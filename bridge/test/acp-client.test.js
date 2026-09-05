@@ -80,6 +80,61 @@ test("initializes, authenticates, and lists ACP sessions", async () => {
   assert.equal(client.processID, undefined)
 })
 
+test("lists every paginated ACP session without duplicate boundary entries", async () => {
+  const listRequests = []
+  const client = new AcpClient({
+    spawnProcess: fakeSpawn((child, request) => {
+      respondToHandshake(child, request)
+      if (request.method !== "session/list") return
+      listRequests.push(request.params)
+      if (!request.params.cursor) {
+        child.respond({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            sessions: [{ sessionId: "session-1" }, { sessionId: "session-2" }],
+            nextCursor: "page-2"
+          }
+        })
+        return
+      }
+      child.respond({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: {
+          sessions: [{ sessionId: "session-2" }, { sessionId: "session-3" }]
+        }
+      })
+    })
+  })
+
+  assert.deepEqual(await client.listSessions(), [
+    { sessionId: "session-1" },
+    { sessionId: "session-2" },
+    { sessionId: "session-3" }
+  ])
+  assert.deepEqual(listRequests, [{}, { cursor: "page-2" }])
+  client.close()
+})
+
+test("rejects a repeated ACP session-list cursor", async () => {
+  const client = new AcpClient({
+    spawnProcess: fakeSpawn((child, request) => {
+      respondToHandshake(child, request)
+      if (request.method === "session/list") {
+        child.respond({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: { sessions: [], nextCursor: "same-page" }
+        })
+      }
+    })
+  })
+
+  await assert.rejects(client.listSessions(), /repeated session\/list cursor/)
+  client.close()
+})
+
 test("launches an ACP adapter with the configured command and arguments", async () => {
   const calls = []
   const client = new AcpClient({

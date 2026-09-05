@@ -362,7 +362,7 @@ test("stopping a Claude turn settles the tool call it interrupted", async () => 
   const service = new AcpService(acp)
   await service.prompt(ACTIVITY_SESSION, "run the suite")
   await new Promise((resolve) => setTimeout(resolve, 20))
-  service.abort(ACTIVITY_SESSION)
+  await service.abort(ACTIVITY_SESSION)
 
   assert.deepEqual(acp.cancelled, [ACTIVITY_SESSION])
   assert.deepEqual(toolParts(await service.messages(ACTIVITY_SESSION)), [

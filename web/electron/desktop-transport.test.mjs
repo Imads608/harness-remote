@@ -204,6 +204,17 @@ test('request routing selects an agent inside the approved root machine profile'
   })).error.code, 'invalid-payload')
 })
 
+test('request routing accepts GitHub Copilot CLI as a daemon agent', async () => {
+  const routed = await executeDesktopRequest(localProfile, {
+    path: '/echo/session',
+    route: { backend: 'copilot', agentId: 'copilot' }
+  })
+  assert.deepEqual(routed.response.data, {
+    url: '/v1/agents/copilot/echo/session',
+    backend: 'copilot'
+  })
+})
+
 test('HTTP errors expose status without matching prose', async () => {
   const missing = await executeDesktopRequest(localProfile, { path: '/missing' })
   assert.equal(missing.error.code, 'http')

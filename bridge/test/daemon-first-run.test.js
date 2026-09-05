@@ -69,6 +69,11 @@ test("an ACP adapter already on PATH is preferred over fetching one", async () =
     args: ["acp"],
     source: "harness"
   })
+  assert.deepEqual(resolveAcpLaunch(harnessProfile("copilot"), { find: () => "/never/used" }), {
+    command: "copilot",
+    args: ["--acp", "--stdio"],
+    source: "harness"
+  })
 
   for (const backend of ["claude", "codex"]) {
     const profile = harnessProfile(backend)

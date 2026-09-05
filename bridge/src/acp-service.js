@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises"
+import { mkdir, readFile, realpath, rename, unlink, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { TranscriptCache } from "./transcript-cache.js"
 import {
@@ -463,6 +463,9 @@ export class AcpService {
   #nativeRenameCommand
   #journalPageWhileOwned
   #modelVariantConfigIDs
+  #sessionRoots
+  #resolvedSessionRoots
+  #visibleSessionIDs = new Set()
   constructor(acp, {
     snapshotDirectory,
     historyLoader,
@@ -489,6 +492,7 @@ export class AcpService {
      * id the running adapter actually advertised.
      */
     modelVariantConfigIDs = [],
+    sessionRoots = [],
     actionProviders = []
   } = {}) {
     this.#acp = acp
@@ -501,6 +505,7 @@ export class AcpService {
     this.#nativeRenameCommand = nativeRenameCommand
     this.#journalPageWhileOwned = journalPageWhileOwned
     this.#modelVariantConfigIDs = modelVariantConfigIDs
+    this.#sessionRoots = sessionRoots.filter((root) => typeof root === "string" && root)
     this.#actionProviders = actionProviders
     acp.on("notification", (notification) => this.#handleNotification(notification))
   }
@@ -540,6 +545,21 @@ export class AcpService {
   }
 
   /**
+   * Read the harness's lightweight native index without restoring transcript snapshots.
+   *
+   * This is the source for Session rails and status polling. It intentionally shares
+   * #refreshSessions with full reads so a profile-level root boundary cannot be bypassed by the
+   * cheaper metadata endpoint.
+   */
+  async sessionIndex(directory) {
+    await this.#restoreDeletedSessionIndex()
+    const sessions = await this.#refreshSessions()
+    return sessions
+      .filter((session) => !directory || sameDirectory(session.cwd, directory))
+      .filter((session) => !this.#deletedSessions.has(session.sessionId))
+  }
+
+  /**
    * Lightweight overlay for Sessions this bridge already created or claimed.
    *
    * The Session-first rail intentionally reads the harness's cheap native index instead of calling
@@ -551,6 +571,7 @@ export class AcpService {
    */
   ownedSessionIndex(directory) {
     return [...this.#ownedSessions].flatMap((sessionID) => {
+      if (this.#sessionRoots.length && !this.#visibleSessionIDs.has(sessionID)) return []
       const session = this.#sessions.get(sessionID)
       if (!session || (directory && !sameDirectory(session.cwd, directory))) return []
       const titleOverride = this.#titles.get(sessionID)
@@ -566,6 +587,9 @@ export class AcpService {
   }
 
   async createSession({ directory, title, model }) {
+    if (!await this.#sessionDirectoryAllowed(directory)) {
+      throw new Error("Directory is outside the configured --root boundary")
+    }
     await this.#acp.start()
     const result = await this.#acp.request("session/new", { cwd: directory, mcpServers: [] })
     this.#acpOpenSessions.add(result.sessionId)
@@ -580,6 +604,7 @@ export class AcpService {
       _meta: { messageCount: 0 }
     }
     this.#sessions.set(session.sessionId, session)
+    this.#visibleSessionIDs.add(session.sessionId)
     this.#messages.set(session.sessionId, [])
     this.#todos.set(session.sessionId, [])
     this.#loaded.add(session.sessionId)
@@ -588,7 +613,7 @@ export class AcpService {
       this.#titles.set(session.sessionId, title)
       await this.#applyNativeSessionName(session.sessionId, title)
     }
-    if (model) await this.setModel(session.sessionId, model)
+    if (model) await this.#applyModel(session.sessionId, model)
     this.#emit("session.created", session.sessionId)
     this.#persistSnapshot(session.sessionId)
     return sessionView(session, "idle", this.#titleFor(session.sessionId))
@@ -631,7 +656,7 @@ export class AcpService {
   async adoptTaskSession(sessionID, { title, prompt } = {}) {
     await this.#refreshSessions()
     const session = this.#sessions.get(sessionID)
-    if (!session || this.#deletedSessions.has(sessionID)) return false
+    if (!session || !this.#sessionVisible(sessionID) || this.#deletedSessions.has(sessionID)) return false
     this.#ownedSessions.add(sessionID)
     this.#adoptedSessions.add(sessionID)
     if (title && !this.#titles.has(sessionID)) this.#titles.set(sessionID, title)
@@ -778,9 +803,11 @@ export class AcpService {
       await this.#persistDeletedSessionIndex()
       return
     }
-    if (!this.#sessions.has(sessionID)) throw new Error("Harness session not found")
+    if (!this.#sessions.has(sessionID) || !this.#sessionVisible(sessionID)) {
+      throw new Error("Harness session not found")
+    }
 
-    if (this.#isBusy(sessionID)) this.abort(sessionID)
+    if (this.#isBusy(sessionID)) await this.abort(sessionID)
     this.#deletedSessions.add(sessionID)
     await this.#persistDeletedSessionIndex()
     this.#messages.delete(sessionID)
@@ -814,6 +841,7 @@ export class AcpService {
 
   async messages(sessionID, refresh = false) {
     await this.#refreshSessions()
+    if (!this.#sessionVisible(sessionID)) throw new Error("Harness session not found")
     await this.#restoreSnapshot(sessionID)
     if (this.#historyLoader?.authoritativeHistory) {
       try {
@@ -1113,6 +1141,10 @@ export class AcpService {
    */
   async setModel(sessionID, model, variant) {
     await this.#loadForConfigOptions(sessionID)
+    await this.#applyModel(sessionID, model, variant)
+  }
+
+  async #applyModel(sessionID, model, variant) {
     const option = this.#configOptions.get(sessionID)?.find((item) => item.id === "model")
     // The app addresses models as `provider/model` because that is what OpenCode's API does, but a
     // harness whose ids carry no provider — Claude Code's `sonnet`, `opus[1m]` — is shown under the
@@ -1316,7 +1348,8 @@ export class AcpService {
   }
 
   /** Cancelling drops anything still queued, including the messages recorded for it. */
-  abort(sessionID) {
+  async abort(sessionID) {
+    await this.#requireSession(sessionID)
     if (this.#historyLoader && !this.#ownedSessions.has(sessionID)) {
       throw new Error("This session is not active in the app")
     }
@@ -1551,16 +1584,41 @@ export class AcpService {
     await this.#restoreDeletedSessionIndex()
     await this.#refreshSessions()
     await this.#restoreSnapshot(sessionID)
-    if (this.#deletedSessions.has(sessionID) || !this.#sessions.has(sessionID)) {
+    if (this.#deletedSessions.has(sessionID) || !this.#sessions.has(sessionID) || !this.#sessionVisible(sessionID)) {
       throw new Error("Harness session not found")
     }
   }
 
+  #sessionVisible(sessionID) {
+    return !this.#sessionRoots.length || this.#visibleSessionIDs.has(sessionID)
+  }
+
+  async #resolvedRoots() {
+    if (!this.#resolvedSessionRoots) {
+      this.#resolvedSessionRoots = Promise.all(this.#sessionRoots.map((root) => realpath(root)))
+    }
+    return this.#resolvedSessionRoots
+  }
+
+  async #sessionDirectoryAllowed(directory) {
+    if (!this.#sessionRoots.length) return true
+    if (typeof directory !== "string" || !directory) return false
+    const roots = await this.#resolvedRoots()
+    let resolved
+    try {
+      resolved = await realpath(directory)
+    } catch {
+      return false
+    }
+    return roots.some((root) => {
+      const relative = path.relative(root, resolved)
+      return relative === "" || relative !== ".." && !relative.startsWith(`..${path.sep}`)
+    })
+  }
+
   async #load(sessionID, force = false, requireConfigOptions = false) {
-    if (!this.#sessions.has(sessionID)) await this.listSessions()
-    if (this.#deletedSessions.has(sessionID)) throw new Error("Harness session not found")
+    await this.#requireSession(sessionID)
     const session = this.#sessions.get(sessionID)
-    if (!session) throw new Error("Harness session not found")
     if (!force && this.#loaded.has(sessionID)) return
     // Config options only arrive with a real ACP session/load, which a harness may refuse —
     // Codex does for any conversation another client holds open. Sharing one in-flight load
@@ -1741,9 +1799,14 @@ export class AcpService {
 
   async #refreshSessions() {
     if (!this.#sessionListing) {
-      this.#sessionListing = this.#acp.listSessions().then((sessions) => {
+      this.#sessionListing = this.#acp.listSessions().then(async (sessions) => {
+        const allowedSessions = []
+        for (const session of sessions) {
+          if (await this.#sessionDirectoryAllowed(session.cwd)) allowedSessions.push(session)
+        }
+        this.#visibleSessionIDs = new Set(allowedSessions.map((session) => session.sessionId))
         const listed = new Set()
-        const refreshed = sessions.map((session) => {
+        const refreshed = allowedSessions.map((session) => {
           listed.add(session.sessionId)
           const known = this.#sessions.get(session.sessionId)
           const updatedAt = this.#preserveListedTimestamps && known?.updatedAt
@@ -1754,7 +1817,14 @@ export class AcpService {
           return normalized
         })
         for (const [sessionID, session] of this.#sessions) {
-          if (this.#ownedSessions.has(sessionID) && !listed.has(sessionID)) refreshed.push(session)
+          if (
+            this.#ownedSessions.has(sessionID)
+            && !listed.has(sessionID)
+            && await this.#sessionDirectoryAllowed(session.cwd)
+          ) {
+            this.#visibleSessionIDs.add(sessionID)
+            refreshed.push(session)
+          }
         }
         return refreshed
       }).finally(() => {

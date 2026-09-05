@@ -120,6 +120,34 @@ export const HARNESS_PROFILES = {
       sessionDelete: true
     }
   },
+  copilot: {
+    id: "copilot",
+    label: "GitHub Copilot CLI",
+    // Copilot CLI speaks ACP directly. `--stdio` is required for the JSON-RPC transport even
+    // though it is not currently shown in the top-level CLI help. Keep the launch native so the
+    // user's existing `copilot` login, settings, skills and session store remain authoritative.
+    command: "copilot",
+    args: ["--acp", "--stdio"],
+    permissionMode: "allow",
+    authMethod: "copilot-login",
+    preserveListedTimestamps: true,
+    reloadOnHistoryRefresh: false,
+    // Copilot's native index spans every repository its user has opened. Unlike the older ACP
+    // profiles, never expose or acquire a Session whose authoritative cwd is outside --root.
+    restrictSessionsToRoots: true,
+    // Copilot advertises reasoning effort independently from its model choice. As with every ACP
+    // harness, values come from the running process rather than a hard-coded product catalog.
+    modelVariantConfigIDs: ["reasoning_effort"],
+    capabilities: {
+      ...COMMON_CAPABILITIES,
+      models: true,
+      todos: false,
+      commands: false,
+      actions: false,
+      sessionRename: false,
+      sessionDelete: false
+    }
+  },
   codex: {
     id: "codex",
     label: "Codex CLI",

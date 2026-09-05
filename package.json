@@ -15,7 +15,7 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Local-first control plane for native AI coding-agent sessions across Codex CLI, Claude Code, OpenCode, Oh My Pi and PI.",
+  "description": "Local-first control plane for native AI coding-agent sessions across Codex CLI, GitHub Copilot CLI, Claude Code, OpenCode, Oh My Pi and PI.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -31,6 +31,8 @@
     "remote-development",
     "local-first",
     "codex",
+    "github-copilot",
+    "copilot",
     "claude-code",
     "opencode",
     "oh-my-pi",

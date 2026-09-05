@@ -3,7 +3,7 @@
 Thanks for wanting to work on this. Harness Remote is a local-first control plane for native
 coding-agent Sessions. It discovers the machines, Projects and harness capabilities that already
 exist, then lets users observe and continue work from web, desktop or Android. OpenCode, Oh My Pi
-(OMP), PI, Claude Code and Codex CLI are supported today. Adding a harness should mean adding a
+(OMP), PI, Claude Code, Codex CLI and GitHub Copilot CLI are supported today. Adding a harness should mean adding a
 profile/adapter entry and its documented capability contract, never a special case threaded through
 the product.
 
@@ -18,7 +18,7 @@ if you are having an agent do the work.
 | `web/src/` | Application source. `main.tsx` boots the client; native Session workspace components and `api.ts` implement the product UI and transport |
 | `web/electron/` | Main/preload shell, IPC contract, profile registry, HTTP and SSE transports |
 | `web/native-android/` | Java sources copied into generated Android project — see [Android packaging](#android-packaging) |
-| `bridge/` | Local HTTP/SSE server translating app API to ACP over stdio, for OMP, PI, Claude Code and Codex CLI |
+| `bridge/` | Local HTTP/SSE server translating app API to ACP over stdio, for OMP, PI, Claude Code, Codex CLI and GitHub Copilot CLI |
 | `.github/workflows/` | Cloud APK/AAB and Windows/macOS/Linux Electron builds |
 
 ## Prerequisites
@@ -26,7 +26,7 @@ if you are having an agent do the work.
 - **Node.js 20 or newer.** `web/` needs `npm ci`; `bridge/` has no dependencies at all and
   runs on the standard library, so do not look for a lockfile there.
 - **A harness to talk to.** An OpenCode server or a working bridge-backed harness: OMP, PI,
-  Claude Code or Codex CLI. You can develop UI-only changes without one, but see
+  Claude Code, Codex CLI or GitHub Copilot CLI. You can develop UI-only changes without one, but see
   [Test against a real agent](#test-against-a-real-agent)
 - **Desktop packaging:** electron-builder does not cross-compile, so each artifact is built and
   smoke-tested on its own OS. CI covers all three; locally you can only check the one you are on.

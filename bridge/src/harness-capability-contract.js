@@ -46,6 +46,7 @@ function acpSessionContract(profile) {
         stop: "owned-session-native-cancel"
       }
     case "claude":
+    case "copilot":
       return {
         authority: "native-harness",
         discovery: "native-list",

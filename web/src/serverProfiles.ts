@@ -10,7 +10,8 @@ export const BACKEND_STORAGE_KEYS = {
   omp: "opencode.remote.server.omp",
   pi: "opencode.remote.server.pi",
   claude: "opencode.remote.server.claude",
-  codex: "opencode.remote.server.codex"
+  codex: "opencode.remote.server.codex",
+  copilot: "opencode.remote.server.copilot"
 } as const
 
 export const SERVER_PROFILES_STORAGE_KEY = "opencode.remote.serverProfiles"
@@ -26,7 +27,7 @@ export type SavedServerProfile = {
   config: ServerConfig
 }
 
-const BACKENDS: BackendKind[] = ["opencode", "omp", "pi", "claude", "codex"]
+const BACKENDS: BackendKind[] = ["opencode", "omp", "pi", "claude", "codex", "copilot"]
 
 function defaultConfig(backend: BackendKind): ServerConfig {
   return {
@@ -39,7 +40,7 @@ function defaultConfig(backend: BackendKind): ServerConfig {
 }
 
 function isBackend(value: unknown): value is BackendKind {
-  return value === "opencode" || value === "omp" || value === "pi" || value === "claude" || value === "codex"
+  return value === "opencode" || value === "omp" || value === "pi" || value === "claude" || value === "codex" || value === "copilot"
 }
 
 function parseConfig(value: unknown, fallbackBackend: BackendKind): ServerConfig | null {
@@ -56,7 +57,7 @@ function profileID(): string {
 }
 
 function profileName(backend: BackendKind, position: number): string {
-  const label = backend === "omp" ? "Oh My Pi" : backend === "pi" ? "PI" : backend === "claude" ? "Claude Code" : backend === "codex" ? "Codex CLI" : "OpenCode"
+  const label = backend === "omp" ? "Oh My Pi" : backend === "pi" ? "PI" : backend === "claude" ? "Claude Code" : backend === "codex" ? "Codex CLI" : backend === "copilot" ? "GitHub Copilot CLI" : "OpenCode"
   return position === 0 ? `${label} server` : `${label} server ${position + 1}`
 }
 
@@ -66,6 +67,7 @@ function namedHarness(name: string): BackendKind | undefined {
   if (/\boh my pi\b|\bomp\b/.test(value)) return "omp"
   if (/(^|[\s·._-])pi([\s·._-]|$)/.test(value)) return "pi"
   if (/\bclaude\b/.test(value)) return "claude"
+  if (/\bcopilot\b/.test(value)) return "copilot"
   return undefined
 }
 

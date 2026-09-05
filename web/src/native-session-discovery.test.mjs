@@ -31,6 +31,18 @@ assert.deepEqual(nativeSessionConfig(base, codex), {
   agentId: 'codex'
 })
 
+const copilot = {
+  ...codex,
+  id: 'copilot',
+  label: 'GitHub Copilot CLI',
+  backend: 'copilot'
+}
+assert.deepEqual(nativeSessionConfig(base, copilot), {
+  ...base,
+  backend: 'copilot',
+  agentId: 'copilot'
+})
+
 const calls = []
 const client = {
   async listGlobalSessions(config) {

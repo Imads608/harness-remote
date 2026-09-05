@@ -21,6 +21,7 @@ Harness Remote must not flatten harness-specific capabilities into a fake univer
 | OMP | ACP over stdio JSON-RPC | ACP Session updates | ACP Session updates | fresh prompt-less technical ACP Session `configOptions` | machine | `thinking` only when advertised | OMP |
 | PI | ACP over stdio JSON-RPC | ACP Session updates | ACP Session updates | fresh prompt-less technical `pi-acp` Session `configOptions` | machine | `thinkingLevel`, compatible runtime aliases only when advertised | PI |
 | Codex | ACP over stdio JSON-RPC | ACP Session updates | ACP Session updates | fresh prompt-less technical ACP Session `configOptions` | machine | `reasoning_effort` only when advertised | Codex |
+| GitHub Copilot CLI | Native ACP over stdio JSON-RPC | ACP Session updates | ACP Session updates | fresh prompt-less technical ACP Session `configOptions` | machine | `reasoning_effort` only when advertised | GitHub Copilot CLI |
 | Claude | ACP over stdio JSON-RPC | ACP Session updates | ACP Session updates | fresh prompt-less technical ACP Session `configOptions` | machine | runtime-advertised controls only; no fabricated reasoning levels | Claude |
 
 ## Model discovery scope
@@ -81,7 +82,7 @@ The structured runtime contract currently describes the intended routing semanti
 - Stop: native abort/cancel path;
 - reconnect: daemon transport reconciliation rather than blindly replaying a prompt.
 
-Exact real-machine behavior remains part of the 3.0 release gate. This matrix documents the contract and implementation path; it does not replace validation against installed OpenCode, OMP, PI, Codex and Claude builds.
+Exact real-machine behavior remains part of the release gate. This matrix documents the contract and implementation path; it does not replace validation against installed OpenCode, OMP, PI, Codex, Copilot and Claude builds.
 
 ## Transport notes
 
@@ -91,7 +92,7 @@ OpenCode uses HTTP for control. Harness Remote owns one upstream OpenCode global
 
 ### ACP harnesses
 
-OMP, PI, Codex and Claude are controlled through ACP adapters over stdio JSON-RPC. Session updates carry the harness-native activity through the ACP representation. Model discovery uses a separate prompt-less technical ACP connection from user-facing Session ownership so discovery cannot take over a native Session.
+OMP, PI, Codex and Claude are controlled through ACP adapters over stdio JSON-RPC. GitHub Copilot CLI exposes the same protocol directly with `copilot --acp --stdio`. Session updates carry the harness-native activity through the ACP representation. Model discovery uses a separate prompt-less technical ACP connection from user-facing Session ownership so discovery cannot take over a native Session.
 
 ## Variant and reasoning metadata
 
@@ -100,6 +101,7 @@ Harness Remote preserves controls that the running harness actually advertises:
 - OMP: `thinking` when advertised;
 - PI: `thinkingLevel` or compatible runtime aliases when advertised;
 - Codex: `reasoning_effort` when advertised;
+- GitHub Copilot CLI: `reasoning_effort` when advertised;
 - Claude: no fabricated low/medium/high levels;
 - OpenCode: provider-advertised variants.
 

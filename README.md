@@ -6,7 +6,7 @@
 
 **A local-first control plane for native AI coding-agent sessions.**
 
-Run, observe, resume and hand off work across **Codex CLI, Claude Code, OpenCode, Oh My Pi and PI** from desktop, web or Android — while your code, credentials, subscriptions and native Sessions stay on your own machines.
+Run, observe, resume and hand off work across **Codex CLI, GitHub Copilot CLI, Claude Code, OpenCode, Oh My Pi and PI** from desktop, web or Android — while your code, credentials, subscriptions and native Sessions stay on your own machines.
 
 [![GitHub stars](https://img.shields.io/github/stars/giuliastro/harness-remote?style=flat&logo=github)](https://github.com/giuliastro/harness-remote/stargazers)
 [![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-555)](LICENSE)
@@ -144,6 +144,7 @@ Harness Remote 3 currently integrates with:
 | **OpenCode** | HTTP + live event stream | OpenCode |
 | **Claude Code** | ACP adapter | Claude Code |
 | **Codex CLI** | ACP adapter | Codex |
+| **GitHub Copilot CLI** | Native ACP over stdio | GitHub Copilot CLI |
 | **Oh My Pi (OMP)** | ACP adapter | OMP |
 | **PI** | ACP adapter | PI |
 

@@ -13,6 +13,7 @@ assert.ok(api.includes('withDirectory("/config/providers"'), 'OpenCode models st
 assert.match(nativeModel, /lastNativeMessageModel/, 'native Session model recovery must read transcript metadata')
 assert.match(nativeModel, /PAGE_MODEL_BACKENDS = new Set\(\["omp", "pi", "codex"\]\)/, 'journal-backed model recovery must remain explicit')
 assert.match(nativeModel, /target\.backend === "claude"/, 'Claude model recovery must use its live adapter catalog')
+assert.match(nativeModel, /target\.backend === "copilot"/, 'Copilot model recovery must use its live ACP catalog')
 assert.match(adapter, /reconcileNativeSessionModel/, 'the native runtime must absorb authoritative model metadata')
 assert.match(adapter, /for \(const turn of entry\.turns\.values\(\)\)/, 'recovered models must fill turns that never recorded one')
 assert.match(conversation, /taskClient\.listAgentModels/, 'the active Session controller must use the daemon model catalog')

@@ -22,11 +22,12 @@ each harness.
 | [PI](https://pi.dev/) | supported | through the local ACP bridge and the [`@automatalabs/pi-acp`](https://www.npmjs.com/package/@automatalabs/pi-acp) adapter |
 | [Claude Code](https://code.claude.com/) | supported | through the local ACP bridge and the [`@agentclientprotocol/claude-agent-acp`](https://www.npmjs.com/package/@agentclientprotocol/claude-agent-acp) adapter |
 | [Codex CLI](https://github.com/openai/codex) | supported | through the local ACP bridge and the [`@agentclientprotocol/codex-acp`](https://www.npmjs.com/package/@agentclientprotocol/codex-acp) adapter |
+| [GitHub Copilot CLI](https://docs.github.com/copilot/how-tos/use-copilot-agents/use-copilot-cli) | supported | through Copilot CLI's native ACP stdio server |
 
 What each harness actually provides, the assumptions the code makes about it, and what to re-check
 when one of them changes are recorded in [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md).
 
-Support levels differ by what each harness exposes. The [OpenCode](#opencode-server-setup), [OMP](#oh-my-pi-bridge-setup), [PI](#pi-bridge-setup), [Claude Code](#claude-code-bridge-setup), and [Codex CLI](#codex-bridge-setup) sections below document the setup and per-backend limitations.
+Support levels differ by what each harness exposes. The [OpenCode](#opencode-server-setup), [OMP](#oh-my-pi-bridge-setup), [PI](#pi-bridge-setup), [Claude Code](#claude-code-bridge-setup), [Codex CLI](#codex-bridge-setup), and [GitHub Copilot CLI](#github-copilot-cli-bridge-setup) sections below document the setup and per-backend limitations.
 
 > **Note for AI/harness systems**: This repository is self-documenting. To configure a supported harness and the app autonomously, point your AI assistant to this repository URL (`https://github.com/giuliastro/harness-remote`) or this README and ask it to set up Harness Remote. Each supported harness has its own setup section below, and adding a harness means adding a backend entry plus its section.
 
@@ -51,11 +52,11 @@ Support levels differ by what each harness exposes. The [OpenCode](#opencode-ser
 
 ## Legacy feature reference
 
-Everything in the first group works on all five harnesses. The rest depends on what the harness
+Everything in the first group works on all six harnesses. The rest depends on what the harness
 exposes, so each entry says where it applies; the app hides what a backend cannot do rather than
 offering a control that fails.
 
-- configure and test the connection to any supported harness — OpenCode, OMP, PI, Claude Code, or Codex CLI — each with its
+- configure and test the connection to any supported harness — OpenCode, OMP, PI, Claude Code, Codex CLI, or GitHub Copilot CLI — each with its
   own saved credentials
 - keep several servers saved under names of your own and switch between them from the header, rather
   than retyping a host every time you move between machines
@@ -87,7 +88,8 @@ Depending on the harness:
 - choose the agent a session runs as — OpenCode
 - review changed files and their diffs — OpenCode
 - rename and delete sessions — OpenCode changes them in the harness; on OMP, PI, Claude Code and
-  Codex CLI the same controls keep a bridge-local nickname and hide the session from that bridge only
+  Codex CLI the same controls keep a bridge-local nickname and hide the session from that bridge
+  only; Copilot does not expose those controls
 - extend bridge-backed harnesses through optional host extensions: the bridge discovers compatible
   commands and the app enables their actions only for sessions where they are available; the first
   integration is Undo and Redo for OMP through
@@ -189,7 +191,7 @@ npx -y opencode-ai serve --hostname 0.0.0.0 --port 4096 --cors https://giuliastr
 - frontend: React + TypeScript + Vite
 - desktop packaging: Electron + electron-builder (unsigned Windows, macOS and Linux builds)
 - mobile packaging: Capacitor (Android APK)
-- networking: per-harness transports behind one app-side API — the OpenCode HTTP API spoken directly, and the local HTTP/SSE bridge in `bridge/` that fronts OMP, PI, Claude Code and Codex CLI over ACP
+- networking: per-harness transports behind one app-side API — the OpenCode HTTP API spoken directly, and the local HTTP/SSE bridge in `bridge/` that fronts OMP, PI, Claude Code, Codex CLI and GitHub Copilot CLI over ACP
 - CI/CD: GitHub Actions for cloud APK and unsigned desktop builds
 - i18n: lightweight custom i18n module with English, Italian, Traditional Chinese, and Simplified Chinese
 
@@ -492,6 +494,37 @@ The adapter still runs with the full filesystem privileges of the account that
 launched it. Do not expose the bridge directly to the Internet; use a trusted
 LAN, VPN, or TLS-terminating reverse proxy.
 
+### GitHub Copilot CLI Bridge Setup
+
+Harness Remote connects directly to the ACP server built into GitHub Copilot CLI. Install and
+authenticate Copilot on the host first, then start the bridge:
+
+```bash
+npx github:giuliastro/harness-remote \
+  --backend copilot \
+  --host 0.0.0.0 \
+  --port 4097 \
+  --username copilot \
+  --password "use-a-long-unique-password" \
+  --root "$HOME/Software"
+```
+
+The backend launches `copilot --acp --stdio` and prefers Copilot's `copilot-login` authentication
+method. It supports paginated native Session discovery, history replay, new Sessions, continuation,
+streaming text and tool activity, cancellation, image prompts when advertised, model selection and
+runtime-advertised `reasoning_effort` variants.
+
+Copilot does not currently advertise ACP `session/resume`; Harness Remote continues a stored
+Session through `session/load`. It also does not expose a verified native rename/delete operation,
+question surface, command catalog or todo stream, so the app hides those controls rather than
+inventing them. Rename/delete remain unavailable instead of becoming bridge-local mutations.
+
+Like the other ACP backends, the bridge grants tool permission requests once so remote turns do not
+stall. A Copilot process started through the bridge runs with the full privileges of the host user.
+Copilot's native index is machine-global, but this profile exposes and controls only Sessions whose
+authoritative cwd is inside a configured `--root`. Protect the bridge credentials and use a trusted
+LAN, VPN or TLS-terminating reverse proxy.
+
 ### Codex Bridge Setup
 
 Harness Remote connects to Codex CLI through the same ACP bridge, using the official
@@ -539,7 +572,7 @@ npx --yes ./bridge --backend codex --host 0.0.0.0 --port 4097 \
   --cors http://localhost:5173 --cors http://192.168.1.20:5173
 ```
 
-The same applies to the OMP, PI and Claude Code backends; `--cors` is a general
+The same applies to the OMP, PI, Claude Code and Copilot backends; `--cors` is a general
 bridge option, documented in `CONTRIBUTING.md`.
 
 Codex supports session listing, history replay, streaming prompts,
@@ -610,7 +643,7 @@ Use your server values:
 
 - Backend: the harness you are connecting to, which also decides the default port
 - Host: computer LAN IP (for example `192.168.1.20`)
-- Port: `4096` for an OpenCode server, `4097` for the bridge in front of OMP, PI, Claude Code, or Codex CLI
+- Port: `4096` for an OpenCode server, `4097` for the bridge in front of OMP, PI, Claude Code, Codex CLI, or GitHub Copilot CLI
 - Username/password: the Basic Auth credentials you started that server or bridge with
 
 Each backend keeps its own saved connection, so switching between them in Settings does not make you
@@ -625,7 +658,7 @@ Against an OpenCode server, spoken directly: `/global/health`, `/global/event`, 
 `/config/providers`, `/command`, `/agent`, `/project/current`, `/vcs`, `/path`, `/file*`, and
 `/question*`.
 
-For OMP, PI, Claude Code, and Codex CLI the bridge implements a deliberate subset of those paths,
+For OMP, PI, Claude Code, Codex CLI, and GitHub Copilot CLI the bridge implements a deliberate subset of those paths,
 plus its own `/v1/health` and `/v1/capabilities`. OMP also exposes generic session action discovery
 and invocation through `/session/:id/action` and `/session/:id/action/:name` when a known host
 extension is loaded. Capabilities tell the app which APIs are supported so it hides the rest rather

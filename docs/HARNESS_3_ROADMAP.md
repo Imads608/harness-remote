@@ -19,7 +19,7 @@ The promise is:
 
 > **Your sessions. Any coding agent. Any device.**
 
-Harness Remote does not try to become another coding agent or to replace the Session model already owned by Codex, Claude Code, OpenCode, OMP, PI and future harnesses.
+Harness Remote does not try to become another coding agent or to replace the Session model already owned by Codex, GitHub Copilot CLI, Claude Code, OpenCode, OMP, PI and future harnesses.
 
 ## 2. User-facing model
 
@@ -184,6 +184,7 @@ The current 3.0 line supports:
 
 - OpenCode;
 - Codex CLI;
+- GitHub Copilot CLI;
 - Claude Code;
 - Oh My Pi (OMP);
 - PI.
