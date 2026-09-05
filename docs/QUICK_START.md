@@ -75,6 +75,31 @@ gateway authentication and authorization boundary in front of both `/agents/` an
 Gateway mode disables and removes the app's service worker for that exact base path before rendering,
 so authenticated API responses and login redirects are never available through its offline cache.
 
+#### Link directly to a native Session
+
+An incident or other external page can open an existing conversation with:
+
+```text
+/agents/?machine=gateway-arch-desktop&agent=copilot&session=<native-session-id>
+```
+
+Use the exact provisioned `id` from `config.js` for `machine` (for example,
+`gateway-arch-desktop` if that is the provisioned id), the daemon's agent id for `agent`, and
+URL-encode each value. A canonical daemon `machine.id` is also accepted once that machine is
+discovered. The target must already be present in that agent's native Session listing; the client
+does not create a Session or translate a task/incident id.
+
+Only the target machine must be ready. The client reads its Session list through the configured
+same-origin proxy, finds the exact native id, and takes the directory and other metadata from that
+record. A `directory` query parameter is ignored. Opening the conversation does not claim its writer
+or submit a prompt. Missing, ambiguous, or unavailable targets produce a visible error.
+
+This is an initial navigation, not a persistent selection override: after opening, failing, or a
+manual selection/dismissal, the link parameters are removed with `history.replaceState`. Refreshes
+and later discovery cannot steal focus. Reopen the original incident link to retry a failed lookup.
+An unknown canonical id cannot be distinguished from an offline daemon's id until discovery settles;
+provisioned ids avoid that dependency on other machines.
+
 From a local repository checkout, the equivalent launcher command is:
 
 ```bash

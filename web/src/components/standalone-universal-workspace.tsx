@@ -21,6 +21,11 @@ import {
   type NativeSessionSurfaceTarget
 } from "../native-session-discovery"
 import { migrateNativeSessionMachineStorage } from "../native-session-machine-id-migration"
+import {
+  consumeNativeSessionDeepLink,
+  createNativeSessionDeepLinkNavigation,
+  type DeepLinkNotice
+} from "../native-session-deep-link"
 import { nativeSessionTransferredContext } from "../native-session-prompt"
 import type { NativeSessionRouteMachine } from "../native-session-routing"
 import type { MachineSnapshot, Session } from "../types"
@@ -329,6 +334,8 @@ function NativeSessionsWorkspace({
   const [refreshing, setRefreshing] = useState(false)
   const [revision, setRevision] = useState(0)
   const [selected, setSelected] = useState<NativeSessionSurfaceTarget | null>(null)
+  const [deepLinkNotice, setDeepLinkNotice] = useState<DeepLinkNotice>(null)
+  const deepLinkNavigation = useRef<ReturnType<typeof createNativeSessionDeepLinkNavigation> | null>(null)
   const [selectedState, setSelectedState] = useState<NativeSessionVisualState | undefined>(undefined)
   const [selectedLinks, setSelectedLinks] = useState<NativeSessionLink[]>([])
   const [lineageError, setLineageError] = useState<string | null>(null)
@@ -401,7 +408,7 @@ function NativeSessionsWorkspace({
       return previous ? { ...previous, machine } : { machine, snapshot: null, state: "loading" }
     })))
 
-    void Promise.all(machines.map(async (machine): Promise<NativeMachineRuntime> => {
+    const probes = machines.map(async (machine): Promise<NativeMachineRuntime> => {
       try {
         const snapshot = await discoverMachineWithRetry(machine.config)
         if (snapshot) migrateNativeSessionMachineStorage(machine.id, snapshot.machine.id)
@@ -433,11 +440,16 @@ function NativeSessionsWorkspace({
           consecutiveFailures
         }
       }
-    })).then((next) => {
+    })
+    void Promise.all(probes.map((probe) => probe.then((next) => {
+      // Publish each daemon independently: opening a Session on one host must not wait for another
+      // host's connection timeout, even though the overall startup indicator still tracks both.
       if (!cancelled && refreshGeneration.current === generation) {
-        setRuntimes((current) => reuseList(current, next))
+        setRuntimes((current) => reuseList(current, current.map((runtime) =>
+          runtime.machine.id === next.machine.id ? reuseList([runtime], [next])[0] : runtime
+        )))
       }
-    }).finally(() => {
+    }))).finally(() => {
       if (!cancelled && refreshGeneration.current === generation) {
         setLoaded(true)
         setRefreshing(false)
@@ -477,7 +489,6 @@ function NativeSessionsWorkspace({
     selectedRuntime?.state === "online"
     && selectedRuntime.snapshot
     && !selectedRuntime.error
-    && sessionsDiscovered
   )
   const lastConnectionProbeRequest = useRef(0)
   const markSelectedMachineConnectionIssue = useCallback(() => {
@@ -603,11 +614,31 @@ function NativeSessionsWorkspace({
   const startupPhase: "machines" | "sessions" | "ready" =
     !loaded || loadingCount > 0 ? "machines" : !sessionsDiscovered ? "sessions" : "ready"
 
-  function openSession(target: NativeSessionSurfaceTarget) {
+  const openSession = useCallback((target: NativeSessionSurfaceTarget) => {
+    deepLinkNavigation.current?.cancel()
     setSelectedState(undefined)
     setSelected(target)
     setMobileDetailOpen(true)
-  }
+  }, [])
+
+  useEffect(() => {
+    const search = window.location.search
+    const navigation = createNativeSessionDeepLinkNavigation(search, {
+      open: openSession,
+      notice: setDeepLinkNotice,
+      consume: () => consumeNativeSessionDeepLink(search)
+    })
+    deepLinkNavigation.current = navigation
+    void navigation.reconcile(runtimesRef.current)
+    return () => {
+      navigation.dispose()
+      deepLinkNavigation.current = null
+    }
+  }, [openSession])
+
+  useEffect(() => {
+    void deepLinkNavigation.current?.reconcile(runtimes)
+  }, [runtimes])
 
   const markSessionDeleting = useCallback((key: string) => {
     setDeletingSessionKeys((current) => {
@@ -719,6 +750,12 @@ function NativeSessionsWorkspace({
           </button>
         </div>
       </header>
+      {deepLinkNotice ? (
+        <div className={`hr-session-deep-link-notice ${deepLinkNotice.state}`} role={deepLinkNotice.state === "error" ? "alert" : "status"}>
+          <span>{deepLinkNotice.message}</span>
+          <button type="button" className="tdw-button secondary" onClick={() => deepLinkNavigation.current?.cancel()}>{t("sf.close")}</button>
+        </div>
+      ) : null}
       <div
         className="hr-native-workspace-body"
         style={railWidth === null ? undefined : { ["--hrsf-rail-width" as string]: `${railWidth}px` }}

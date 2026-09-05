@@ -96,6 +96,28 @@
   animation: tdw-connect-dot 1.35s ease-in-out infinite;
 }
 
+.hr-session-deep-link-notice {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--td3-border-soft);
+  color: var(--td3-text-2);
+  background: var(--td3-panel);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.hr-session-deep-link-notice.error {
+  color: var(--td3-red-text);
+}
+
+.hr-session-deep-link-notice button {
+  flex: none;
+}
+
 
 .hr-native-workspace-body {
   /* Three tracks, not two: the rail, a zero-width track for the divider (it hangs into both sides
